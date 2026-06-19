@@ -10,20 +10,34 @@ COMPOSE="docker compose -f docker-compose.dev.yml -f docker-compose.local.yml"
 say() { printf '\033[36m▸\033[0m %s\n' "$1"; }
 die() { printf '\033[31m✗ %s\033[0m\n' "$1" >&2; exit 1; }
 
-say "Verificando herramientas..."
-for bin in docker pnpm uv; do
-  command -v "$bin" >/dev/null 2>&1 || die "Falta '$bin'. Instalalo y volvé a intentar."
-done
-
 if [ ! -f .env ]; then
   say "Creando configuración inicial (.env)..."
   cp .env.example .env
   sed -i.bak "s|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=$(openssl rand -hex 32)|" .env && rm -f .env.bak
 fi
 
-say "Iniciando base de datos..."
-$COMPOSE up -d >/dev/null
-until docker exec videoeditor-postgres-dev pg_isready -U videoeditor >/dev/null 2>&1; do sleep 1; done
+# Modo local (default true): SQLite + cola en proceso, sin Docker.
+LOCAL_MODE=$(grep -E '^LOCAL_MODE=' .env | cut -d= -f2- | tr -d '[:space:]')
+LOCAL_MODE=${LOCAL_MODE:-true}
+if [ "$LOCAL_MODE" != "false" ]; then IS_LOCAL=1; else IS_LOCAL=0; fi
+export LOCAL_MODE
+
+say "Verificando herramientas..."
+required_bins="pnpm uv"
+[ "$IS_LOCAL" -eq 1 ] || required_bins="docker $required_bins"
+for bin in $required_bins; do
+  command -v "$bin" >/dev/null 2>&1 || die "Falta '$bin'. Instalalo y volvé a intentar."
+done
+
+if [ "$IS_LOCAL" -eq 1 ]; then
+  say "Modo local: SQLite + cola en proceso (sin Docker)."
+  mkdir -p backend/data
+  export VIBECUT_DB_PATH="$(pwd)/backend/data/local.db"
+else
+  say "Iniciando base de datos..."
+  $COMPOSE up -d >/dev/null
+  until docker exec videoeditor-postgres-dev pg_isready -U videoeditor >/dev/null 2>&1; do sleep 1; done
+fi
 
 if [ ! -d node_modules ]; then
   say "Instalando dependencias (solo la primera vez, puede tardar)..."
@@ -38,11 +52,12 @@ pids=()
 cleanup() {
   printf '\n'; say "Cerrando Kimu..."
   for pid in "${pids[@]}"; do kill "$pid" 2>/dev/null || true; done
-  $COMPOSE stop >/dev/null 2>&1 || true
+  [ "$IS_LOCAL" -eq 1 ] || $COMPOSE stop >/dev/null 2>&1 || true
 }
 trap cleanup EXIT INT TERM
 
 say "Arrancando la app..."
+# Backend primero: en modo local crea el esquema SQLite antes de que el renderer abra el archivo.
 ( cd backend && uv run uvicorn main:app --port 3000 ) >/tmp/kimu-backend.log 2>&1 & pids+=($!)
 pnpm dlx tsx app/videorender/videorender.ts >/tmp/kimu-renderer.log 2>&1 & pids+=($!)
 pnpm dev >/tmp/kimu-frontend.log 2>&1 & pids+=($!)

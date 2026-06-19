@@ -42,6 +42,10 @@ project_data/
 *.log
 *.sqlite
 *.sqlite3
+backend/data/
+*.db
+*.db-wal
+*.db-shm
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

@@ -17,7 +17,9 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Upload } from "@aws-sdk/lib-storage";
-import pkg, { type PoolClient } from "pg";
+import { EventEmitter } from "node:events";
+import pkg from "pg";
+import Database from "better-sqlite3";
 import { Queue, Worker, QueueEvents, Job } from "bullmq";
 import IORedis from "ioredis";
 import { auth } from "~/lib/auth.server";
@@ -40,6 +42,11 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.resolve(scriptDir, "../../.env");
 dotenv.config({ path: envPath });
 
+// ─── Local mode switch ────────────────────────────────────────────────────────
+// LOCAL_MODE (default true) selects SQLite + an in-process render queue. When
+// false, the renderer keeps using Postgres + Redis/BullMQ exactly as before.
+const LOCAL_MODE = (process.env.LOCAL_MODE ?? "true").trim().toLowerCase() !== "false";
+
 // ─── R2 client (S3-compatible) ───────────────────────────────────────────────
 
 const r2 = new S3Client({
@@ -60,12 +67,190 @@ function getAssetUrl(assetId: string): string {
   return `/renderer/assets/${assetId}/file`;
 }
 
-// ─── Database pool ────────────────────────────────────────────────────────────
+// ─── Database adapter ─────────────────────────────────────────────────────────
+// Both engines expose the same minimal surface used across this file:
+//   db.query<T>(sql, params) -> { rows: T[] }
+//   db.connect() -> a transaction client with .query and .release
+// so the route handlers below stay engine-agnostic. The SQLite adapter
+// translates asyncpg-style `$N` placeholders to positional `?`, strips
+// Postgres-only `::uuid|::int|::bigint|::jsonb` casts, and runs synchronously
+// against the shared local.db file that the Python backend created on boot.
 
-const db = new Pool({
-  connectionString: process.env.DATABASE_URL!.trim(),
-  ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : false,
-});
+interface QueryResult<T> {
+  rows: T[];
+}
+
+interface DbClient {
+  query<T = Record<string, unknown>>(sql: string, params?: readonly unknown[]): Promise<QueryResult<T>>;
+  release(): void;
+}
+
+interface Db {
+  query<T = Record<string, unknown>>(sql: string, params?: readonly unknown[]): Promise<QueryResult<T>>;
+  connect(): Promise<DbClient>;
+}
+
+// ── Postgres adapter (LOCAL_MODE=false) ──────────────────────────────────────
+
+function makePgDb(): Db {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL!.trim(),
+    ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : false,
+  });
+  return {
+    async query<T>(sql: string, params: readonly unknown[] = []): Promise<QueryResult<T>> {
+      const result = await pool.query(sql, params as unknown[]);
+      return { rows: result.rows as T[] };
+    },
+    async connect(): Promise<DbClient> {
+      const client = await pool.connect();
+      return {
+        async query<T>(sql: string, params: readonly unknown[] = []): Promise<QueryResult<T>> {
+          const result = await client.query(sql, params as unknown[]);
+          return { rows: result.rows as T[] };
+        },
+        release(): void {
+          client.release();
+        },
+      };
+    },
+  };
+}
+
+// ── SQLite adapter (LOCAL_MODE, default) ─────────────────────────────────────
+
+function resolveSqlitePath(): string {
+  const fromEnv = process.env.VIBECUT_DB_PATH?.trim();
+  if (fromEnv) return fromEnv;
+  return path.resolve(scriptDir, "../../backend/data/local.db");
+}
+
+const PG_CAST_PATTERN = /::(uuid|int|integer|bigint|jsonb|text)\b/gi;
+
+// Tables whose schema declares NOT NULL `created_at`/`updated_at` with no SQLite
+// default. The Postgres path filled these via column DEFAULTs / triggers; here we
+// inject the missing timestamp columns into INSERT statements so the same SQL the
+// Postgres path uses keeps working unchanged at the call sites.
+const TIMESTAMP_INSERT_TABLES: Record<string, ("created_at" | "updated_at")[]> = {
+  r2_objects: ["created_at", "updated_at"],
+  assets: ["created_at", "updated_at"],
+};
+
+// Captures `INSERT INTO <table> (<cols>) VALUES (<first-tuple>)`. Used to splice
+// the missing NOT NULL timestamp columns into both the column list and the first
+// VALUES tuple. The captured groups: 1=table, 2=column list, 3=first values tuple.
+const INSERT_VALUES_PATTERN =
+  /^(\s*insert\s+into\s+"?[a-z0-9_]+"?\s*)\(([^)]*)\)\s*(values)\s*\(([^)]*)\)/i;
+const INSERT_TABLE_NAME = /^\s*insert\s+into\s+"?([a-z0-9_]+)"?/i;
+
+/**
+ * Translate one asyncpg-style statement to SQLite. Returns the rewritten SQL and
+ * the params reordered to match positional `?` placeholders. `$N` tokens are
+ * remapped by index (so a repeated/reordered `$1 ... $1` resolves to the same
+ * param), Postgres casts are stripped, and INSERTs into timestamp-bearing tables
+ * gain the missing `created_at`/`updated_at` columns + values (as server-generated
+ * ISO-8601 literals — never user input — spliced into both the column list and the
+ * first VALUES tuple).
+ */
+function translateToSqlite(
+  sql: string,
+  params: readonly unknown[],
+): { sql: string; params: unknown[] } {
+  // Strip Postgres casts and `FOR UPDATE` row locks (unnecessary under SQLite's
+  // single-writer WAL model, where a write transaction already serializes access).
+  let translated = sql.replace(PG_CAST_PATTERN, "").replace(/\bFOR\s+UPDATE\b/gi, "");
+
+  // SQLite has no now(); emit an ISO-8601 UTC string matching new Date().toISOString()
+  // so timestamps stay comparable with the rest of the schema (e.g. assets.deleted_at).
+  translated = translated.replace(/\bnow\(\)/gi, "strftime('%Y-%m-%dT%H:%M:%fZ','now')");
+
+  // Inject NOT NULL timestamp columns missing from single-row INSERT statements.
+  const table = INSERT_TABLE_NAME.exec(translated)?.[1]?.toLowerCase();
+  const required = table ? TIMESTAMP_INSERT_TABLES[table] : undefined;
+  if (required) {
+    const valuesMatch = INSERT_VALUES_PATTERN.exec(translated);
+    if (valuesMatch) {
+      const [full, head, colsRaw, valuesKeyword, tupleRaw] = valuesMatch;
+      const columns = colsRaw.split(",").map((c) => c.trim().replace(/^"|"$/g, "").toLowerCase());
+      const missing = required.filter((c) => !columns.includes(c));
+      if (missing.length > 0) {
+        const now = new Date().toISOString();
+        const injectedCols = `${colsRaw.trimEnd()}, ${missing.join(", ")}`;
+        const injectedValues = `${tupleRaw.trimEnd()}, ${missing.map(() => `'${now}'`).join(", ")}`;
+        const rewritten = `${head}(${injectedCols}) ${valuesKeyword} (${injectedValues})`;
+        translated = translated.replace(full, rewritten);
+      }
+    }
+  }
+
+  // Remap `$N` -> positional `?`, building a new params array in token order.
+  const reordered: unknown[] = [];
+  translated = translated.replace(/\$(\d+)/g, (_full, digits: string) => {
+    const idx = Number(digits) - 1;
+    reordered.push(params[idx]);
+    return "?";
+  });
+
+  return { sql: translated, params: reordered };
+}
+
+const SQLITE_RETURNING = /\breturning\b/i;
+const SQLITE_VERB = /^\s*([a-z]+)/i;
+
+function makeSqliteDb(): Db {
+  let handle: Database.Database | null = null;
+  const getHandle = (): Database.Database => {
+    if (handle) return handle;
+    const opened = new Database(resolveSqlitePath());
+    opened.pragma("journal_mode = WAL");
+    opened.pragma("foreign_keys = ON");
+    opened.pragma("busy_timeout = 5000");
+    handle = opened;
+    return opened;
+  };
+
+  const run = <T>(sql: string, params: readonly unknown[]): QueryResult<T> => {
+    const { sql: translated, params: bound } = translateToSqlite(sql, params);
+    const db = getHandle();
+    const verb = SQLITE_VERB.exec(translated)?.[1]?.toUpperCase() ?? "";
+    const isRead = verb === "SELECT" || verb === "WITH" || SQLITE_RETURNING.test(translated);
+    const stmt = db.prepare(translated);
+    if (isRead) {
+      const rows = stmt.all(...(bound as unknown[])) as T[];
+      return { rows };
+    }
+    stmt.run(...(bound as unknown[]));
+    return { rows: [] };
+  };
+
+  const query = async <T>(sql: string, params: readonly unknown[] = []): Promise<QueryResult<T>> => {
+    return run<T>(sql, params);
+  };
+
+  const connect = async (): Promise<DbClient> => {
+    const db = getHandle();
+    return {
+      async query<T>(sql: string, params: readonly unknown[] = []): Promise<QueryResult<T>> {
+        const trimmed = sql.trim().toUpperCase();
+        // better-sqlite3 manages transactions via explicit statements; BEGIN /
+        // COMMIT / ROLLBACK are executed directly so the existing handlers'
+        // imperative transaction flow works without a callback wrapper.
+        if (trimmed === "BEGIN" || trimmed === "COMMIT" || trimmed === "ROLLBACK") {
+          db.exec(trimmed);
+          return { rows: [] };
+        }
+        return run<T>(sql, params);
+      },
+      release(): void {
+        /* shared single connection — nothing to release */
+      },
+    };
+  };
+
+  return { query, connect };
+}
+
+const db: Db = LOCAL_MODE ? makeSqliteDb() : makePgDb();
 
 // ─── Remotion bundle ──────────────────────────────────────────────────────────
 
@@ -129,6 +314,10 @@ interface CachedRenderRow {
 }
 
 async function ensureProjectRendersTable(): Promise<void> {
+  // In local mode the table is part of the backend's migrations/sqlite/schema.sql,
+  // which the Python backend runs on startup (it boots before this renderer), so
+  // there is nothing to create here.
+  if (LOCAL_MODE) return;
   await db.query(`
     CREATE TABLE IF NOT EXISTS project_renders (
       id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -167,7 +356,7 @@ async function findCachedRender(
   userId: string,
   fingerprint: string,
 ): Promise<CachedRenderRow | null> {
-  const { rows } = await db.query(
+  const { rows } = await db.query<CachedRenderRow>(
     `SELECT id, file_name, r2_video_key, r2_thumb_key, codec
      FROM project_renders
      WHERE project_id = $1::uuid AND user_id = $2 AND content_fingerprint = $3
@@ -175,7 +364,7 @@ async function findCachedRender(
      LIMIT 1`,
     [projectId, userId, fingerprint],
   );
-  return (rows[0] as CachedRenderRow | undefined) ?? null;
+  return rows[0] ?? null;
 }
 
 async function signRenderAssetUrls(
@@ -270,15 +459,31 @@ async function extractThumbnail(videoPath: string, thumbPath: string): Promise<b
   }
 }
 
-const renderQueue = new Queue<RenderJobData>("renders", { connection: createRedisConnection() });
-const renderQueueEvents = new QueueEvents("renders", { connection: createRedisConnection() });
+interface RenderJobResult {
+  downloadUrl: string;
+  fileName: string;
+  renderId: string;
+}
 
-const renderWorker = new Worker<
-  RenderJobData,
-  { downloadUrl: string; fileName: string; renderId: string }
->(
-  "renders",
-  async (job) => {
+// Minimal job surface shared by the BullMQ worker (cloud) and the in-process
+// queue (local) so the render logic below is written once.
+interface ProcessableJob {
+  data: RenderJobData;
+  updateProgress(progress: number): void | Promise<void>;
+}
+
+/** Remove the partially-written output file for a failed render job. */
+function cleanupFailedRenderArtifacts(renderJobId: string | undefined): void {
+  if (!renderJobId) return;
+  try {
+    const p = `out/${renderJobId}.mp4`;
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  } catch {
+    /* ignore */
+  }
+}
+
+async function processRenderJob(job: ProcessableJob): Promise<RenderJobResult> {
     const {
       userId,
       projectId,
@@ -433,13 +638,17 @@ const renderWorker = new Worker<
 
     await job.updateProgress(97);
 
-    const { rows: insertRows } = await db.query(
+    // Supply `id` explicitly so neither engine relies on a column DEFAULT/trigger
+    // (the SQLite schema has no gen_random_uuid() equivalent on the primary key).
+    const projectRenderId = generateUUID();
+    const { rows: insertRows } = await db.query<{ id: string }>(
       `INSERT INTO project_renders (
-         project_id, user_id, render_job_id, content_fingerprint, file_name, codec,
+         id, project_id, user_id, render_job_id, content_fingerprint, file_name, codec,
          width, height, duration_frames, crf, resolution_preset, r2_video_key, r2_thumb_key
-       ) VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       ) VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING id`,
       [
+        projectRenderId,
         projectId,
         userId,
         renderJobId,
@@ -472,23 +681,203 @@ const renderWorker = new Worker<
 
     console.log(`📦 Render uploaded: ${renderKey}`);
     return { downloadUrl, fileName: downloadFileName, renderId };
-  },
-  {
-    connection: createRedisConnection(),
-    concurrency: 1,
-  },
-);
+}
 
-renderWorker.on("failed", (job, err) => {
-  console.error(`❌ Render job ${job?.id} failed:`, err.message);
-  const renderJobId = job?.data?.renderJobId;
-  if (renderJobId) {
-    try {
-      const p = `out/${renderJobId}.mp4`;
-      if (fs.existsSync(p)) fs.unlinkSync(p);
-    } catch {}
+// ─── Render queue ─────────────────────────────────────────────────────────────
+// Two interchangeable backends behind one surface:
+//   • LOCAL_MODE (default): InProcessRenderQueue — an asyncio-free, single-process
+//     FIFO with concurrency 1, no Redis. State is ephemeral (lost on restart).
+//   • LOCAL_MODE=false: BullMQ Queue/Worker/QueueEvents over Redis (unchanged).
+// Downstream code uses: renderQueue.add(), lookupRenderJob(), renderQueueEvents
+// (.on/.off with BullMQ-shaped payloads).
+
+type RenderJobState = "waiting" | "active" | "completed" | "failed";
+
+// Common read surface the SSE handler needs from a job, satisfied by both a
+// BullMQ Job and the in-process facade.
+interface RenderJobHandle {
+  getState(): Promise<string>;
+  returnvalue: unknown;
+  failedReason: string | undefined;
+}
+
+interface RenderQueueLike {
+  add(name: string, data: RenderJobData): Promise<{ id: string | undefined }>;
+}
+
+// Payloads the SSE handler expects, mirroring BullMQ's QueueEvents shapes.
+type RenderProgressPayload = { jobId: string; data: unknown };
+type RenderCompletedPayload = { jobId: string; returnvalue: unknown };
+type RenderFailedPayload = { jobId: string; failedReason: string };
+
+interface RenderQueueEventsLike {
+  on(event: "progress", listener: (payload: RenderProgressPayload) => void): void;
+  on(event: "completed", listener: (payload: RenderCompletedPayload) => void): void;
+  on(event: "failed", listener: (payload: RenderFailedPayload) => void): void;
+  off(event: "progress", listener: (payload: RenderProgressPayload) => void): void;
+  off(event: "completed", listener: (payload: RenderCompletedPayload) => void): void;
+  off(event: "failed", listener: (payload: RenderFailedPayload) => void): void;
+}
+
+interface JobRecord {
+  id: string;
+  data: RenderJobData;
+  state: RenderJobState;
+  progress: number;
+  returnvalue: RenderJobResult | undefined;
+  failedReason: string | undefined;
+}
+
+const RENDER_JOB_RETENTION_MS = 60 * 60 * 1000; // keep terminal jobs 1h, then GC
+
+class InProcessRenderQueue implements RenderQueueLike {
+  private readonly records = new Map<string, JobRecord>();
+  private readonly fifo: string[] = [];
+  private busy = false;
+  private readonly emitter = new EventEmitter();
+
+  /** Typed event surface mirroring BullMQ's QueueEvents (.on/.off). */
+  readonly events: RenderQueueEventsLike = {
+    on: (event: string, listener: (payload: never) => void): void => {
+      this.emitter.on(event, listener as (...args: unknown[]) => void);
+    },
+    off: (event: string, listener: (payload: never) => void): void => {
+      this.emitter.off(event, listener as (...args: unknown[]) => void);
+    },
+  } as RenderQueueEventsLike;
+
+  async add(_name: string, data: RenderJobData): Promise<{ id: string }> {
+    const id = generateUUID();
+    this.records.set(id, {
+      id,
+      data,
+      state: "waiting",
+      progress: 0,
+      returnvalue: undefined,
+      failedReason: undefined,
+    });
+    this.fifo.push(id);
+    void this.drainLoop();
+    return { id };
   }
-});
+
+  fromId(jobId: string): RenderJobHandle | null {
+    const record = this.records.get(jobId);
+    if (!record) return null;
+    return {
+      getState: async (): Promise<string> => record.state,
+      get returnvalue(): unknown {
+        return record.returnvalue;
+      },
+      get failedReason(): string | undefined {
+        return record.failedReason;
+      },
+    };
+  }
+
+  private async drainLoop(): Promise<void> {
+    if (this.busy) return;
+    const nextId = this.fifo.shift();
+    if (nextId === undefined) return;
+    const record = this.records.get(nextId);
+    if (!record) {
+      void this.drainLoop();
+      return;
+    }
+
+    this.busy = true;
+    record.state = "active";
+    const job: ProcessableJob = {
+      data: record.data,
+      updateProgress: (progress: number): void => {
+        record.progress = progress;
+        this.emitter.emit("progress", { jobId: record.id, data: progress });
+      },
+    };
+
+    try {
+      const result = await processRenderJob(job);
+      record.returnvalue = result;
+      record.state = "completed";
+      this.emitter.emit("completed", { jobId: record.id, returnvalue: result });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      record.failedReason = message;
+      record.state = "failed";
+      console.error(`❌ Render job ${record.id} failed:`, message);
+      cleanupFailedRenderArtifacts(record.data.renderJobId);
+      this.emitter.emit("failed", { jobId: record.id, failedReason: message });
+    } finally {
+      this.scheduleEviction(record.id);
+      this.busy = false;
+      void this.drainLoop();
+    }
+  }
+
+  private scheduleEviction(jobId: string): void {
+    const timer = setTimeout(() => {
+      this.records.delete(jobId);
+    }, RENDER_JOB_RETENTION_MS);
+    timer.unref();
+  }
+}
+
+let renderQueue: RenderQueueLike;
+let renderQueueEvents: RenderQueueEventsLike;
+let lookupRenderJob: (jobId: string) => Promise<RenderJobHandle | null>;
+
+type RawListener = (...args: never[]) => void;
+
+/**
+ * Adapt BullMQ's QueueEvents (whose `.on`/`.off` carry complex generics) to the
+ * typed RenderQueueEventsLike surface the SSE handler consumes. The payload
+ * shapes are identical at runtime; only the static types are bridged here.
+ */
+function wrapBullEvents(source: {
+  on(event: string, listener: RawListener): unknown;
+  off(event: string, listener: RawListener): unknown;
+}): RenderQueueEventsLike {
+  const shim = {
+    on(event: string, listener: (payload: never) => void): void {
+      source.on(event, listener as RawListener);
+    },
+    off(event: string, listener: (payload: never) => void): void {
+      source.off(event, listener as RawListener);
+    },
+  };
+  return shim as RenderQueueEventsLike;
+}
+
+if (LOCAL_MODE) {
+  const inProcess = new InProcessRenderQueue();
+  renderQueue = inProcess;
+  renderQueueEvents = inProcess.events;
+  lookupRenderJob = async (jobId) => inProcess.fromId(jobId);
+} else {
+  const bullQueue = new Queue<RenderJobData>("renders", { connection: createRedisConnection() });
+  const bullQueueEvents = new QueueEvents("renders", { connection: createRedisConnection() });
+  const renderWorker = new Worker<RenderJobData, RenderJobResult>(
+    "renders",
+    (job) => processRenderJob(job),
+    {
+      connection: createRedisConnection(),
+      concurrency: 1,
+    },
+  );
+  renderWorker.on("failed", (job, err) => {
+    console.error(`❌ Render job ${job?.id} failed:`, err.message);
+    cleanupFailedRenderArtifacts(job?.data?.renderJobId);
+  });
+  renderQueue = {
+    add: async (name, data) => {
+      const job = await bullQueue.add(name, data);
+      return { id: job.id };
+    },
+  };
+  renderQueueEvents = wrapBullEvents(bullQueueEvents);
+  lookupRenderJob = async (jobId) =>
+    ((await Job.fromId(bullQueue, jobId)) as RenderJobHandle | undefined) ?? null;
+}
 
 async function getAuthenticatedUserId(req: Request): Promise<string | null> {
   const session = await auth.api.getSession({ headers: req.headers });
@@ -913,7 +1302,7 @@ app.post("/assets/complete-upload", async (req: Request, res: Response): Promise
   }
 
   try {
-    const { rows: lookup } = await db.query(
+    const { rows: lookup } = await db.query<{ r2_key: string; content_hash: string }>(
       "SELECT r2_key, content_hash FROM assets WHERE id=$1 AND user_id=$2 AND deleted_at IS NULL",
       [assetId, userId],
     );
@@ -977,7 +1366,7 @@ type AssetDeleteRow = {
   status: string;
 };
 
-async function shouldDeleteR2Object(client: PoolClient, row: AssetDeleteRow): Promise<boolean> {
+async function shouldDeleteR2Object(client: DbClient, row: AssetDeleteRow): Promise<boolean> {
   if (!row.r2_key || row.status !== "ready") return false;
 
   if (row.content_hash) {
@@ -1177,10 +1566,17 @@ app.post("/assets/:assetId/clone", async (req: Request, res: Response): Promise<
   const { suffix } = req.body as { suffix?: string };
 
   try {
-    const { rows } = await db.query("SELECT * FROM assets WHERE id=$1 AND user_id=$2 AND deleted_at IS NULL", [
-      assetId,
-      userId,
-    ]);
+    const { rows } = await db.query<{
+      r2_key: string;
+      filename: string;
+      project_id: string | null;
+      file_size: number | null;
+      mime_type: string;
+      media_type: string | null;
+      duration_seconds: number | null;
+      width: number | null;
+      height: number | null;
+    }>("SELECT * FROM assets WHERE id=$1 AND user_id=$2 AND deleted_at IS NULL", [assetId, userId]);
 
     if (rows.length === 0) {
       res.status(404).json({ error: "Source asset not found" });
@@ -1508,7 +1904,7 @@ app.get("/render/:jobId/events", async (req: Request, res: Response): Promise<vo
   }, 30_000);
 
   // Handle reconnects: check if job already finished
-  const job = await Job.fromId(renderQueue, jobId);
+  const job = await lookupRenderJob(jobId);
   if (!job) {
     send({ type: "error", message: "Job not found" });
     clearInterval(heartbeat);

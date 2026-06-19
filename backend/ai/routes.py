@@ -2,6 +2,8 @@ import asyncio
 import json
 import logging
 import os
+import time
+from collections import defaultdict, deque
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -17,7 +19,7 @@ from ai.cli_backends import (
 from ai.schema import FunctionCallResponse
 from auth.routes import get_current_user
 from auth.schema import SessionUser
-from db import get_db_pool
+from db import LOCAL_MODE, get_db_pool
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +50,34 @@ _MAX_HISTORY_ITEMS = 50
 _MAX_TIMELINE_BYTES = 10 * 1024 * 1024  # 10 MB
 _MAX_MEDIABIN_BYTES = 4 * 1024 * 1024  # 4 MB
 
-# Per-user DB-backed rate limit. This is shared across worker processes and instances.
-# For higher scale, replace with Redis.
+# Per-user rate limit. In LOCAL_MODE (single user) this is an in-process sliding
+# window; otherwise it's a Postgres-backed counter shared across instances.
 _RATE_LIMIT_WINDOW_SECONDS = 60
 _RATE_LIMIT_MAX_REQUESTS = 60
 _RATE_LIMIT_TABLE = "ai_rate_limit_events"
 _rate_limit_ready = False
 _rate_limit_init_lock = asyncio.Lock()
+
+# LOCAL_MODE in-process limiter state: per-user deque of monotonic timestamps,
+# guarded by a single lock (single local user — no contention worth splitting).
+_local_rate_limit_hits: dict[str, deque[float]] = defaultdict(deque)
+_local_rate_limit_lock = asyncio.Lock()
+
+
+async def _enforce_rate_limit_local(user_id: str) -> None:
+    """In-process sliding-window limiter. No DB, no broker — single local user."""
+    now = time.monotonic()
+    cutoff = now - _RATE_LIMIT_WINDOW_SECONDS
+    async with _local_rate_limit_lock:
+        hits = _local_rate_limit_hits[user_id]
+        while hits and hits[0] < cutoff:
+            hits.popleft()
+        if len(hits) >= _RATE_LIMIT_MAX_REQUESTS:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Rate limit exceeded: {_RATE_LIMIT_MAX_REQUESTS} requests per minute",
+            )
+        hits.append(now)
 
 
 async def _ensure_rate_limit_table() -> None:
@@ -89,33 +112,39 @@ async def _ensure_rate_limit_table() -> None:
         _rate_limit_ready = True
 
 
-async def _enforce_rate_limit(user_id: str) -> None:
+async def _enforce_rate_limit_pg(user_id: str) -> None:
     await _ensure_rate_limit_table()
     pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        async with conn.transaction():
-            await conn.execute("SELECT pg_advisory_xact_lock(hashtext($1))", user_id)
-            await conn.execute(
-                f"""
-                DELETE FROM {_RATE_LIMIT_TABLE}
-                WHERE occurred_at < now() - make_interval(secs => $1::int)
-                """,
-                _RATE_LIMIT_WINDOW_SECONDS,
+    async with pool.acquire() as conn, conn.transaction():
+        await conn.execute("SELECT pg_advisory_xact_lock(hashtext($1))", user_id)
+        await conn.execute(
+            f"""
+            DELETE FROM {_RATE_LIMIT_TABLE}
+            WHERE occurred_at < now() - make_interval(secs => $1::int)
+            """,
+            _RATE_LIMIT_WINDOW_SECONDS,
+        )
+        count_row = await conn.fetchrow(
+            f"SELECT COUNT(*)::int AS request_count FROM {_RATE_LIMIT_TABLE} WHERE user_id = $1",
+            user_id,
+        )
+        request_count = int(count_row["request_count"]) if count_row else 0
+        if request_count >= _RATE_LIMIT_MAX_REQUESTS:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Rate limit exceeded: {_RATE_LIMIT_MAX_REQUESTS} requests per minute",
             )
-            count_row = await conn.fetchrow(
-                f"SELECT COUNT(*)::int AS request_count FROM {_RATE_LIMIT_TABLE} WHERE user_id = $1",
-                user_id,
-            )
-            request_count = int(count_row["request_count"]) if count_row else 0
-            if request_count >= _RATE_LIMIT_MAX_REQUESTS:
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail=f"Rate limit exceeded: {_RATE_LIMIT_MAX_REQUESTS} requests per minute",
-                )
-            await conn.execute(
-                f"INSERT INTO {_RATE_LIMIT_TABLE} (user_id) VALUES ($1)",
-                user_id,
-            )
+        await conn.execute(
+            f"INSERT INTO {_RATE_LIMIT_TABLE} (user_id) VALUES ($1)",
+            user_id,
+        )
+
+
+async def _enforce_rate_limit(user_id: str) -> None:
+    if LOCAL_MODE:
+        await _enforce_rate_limit_local(user_id)
+    else:
+        await _enforce_rate_limit_pg(user_id)
 
 
 class Message(BaseModel):

@@ -1,18 +1,20 @@
 import logging
-import os
+from datetime import UTC, datetime
 from urllib.parse import unquote
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from auth.schema import SessionUser
-from db import get_db_pool
+
+# LOCAL_MODE is owned by db.py (the single source of truth). Re-exported here so
+# existing imports `from auth.routes import LOCAL_MODE` keep working.
+from db import LOCAL_MODE, get_db_pool
 
 logger = logging.getLogger(__name__)
 
 # Local single-user mode: no login, no Google OAuth. The app runs as one
 # implicit local user. This is the default for a personal, self-hosted install
 # (set LOCAL_MODE=false to require real BetterAuth sessions, e.g. in the cloud).
-LOCAL_MODE = (os.getenv("LOCAL_MODE") or "true").strip().lower() in ("1", "true", "yes")
 LOCAL_USER_ID = "local-user"
 _LOCAL_USER = SessionUser(
     user_id=LOCAL_USER_ID,
@@ -50,17 +52,21 @@ async def ensure_local_user() -> None:
     """Seed the implicit local user so project/asset foreign keys resolve."""
     if not LOCAL_MODE:
         return
+    now = datetime.now(UTC).isoformat()
     pool = await get_db_pool()
     async with pool.acquire() as conn:
+        # SQLite has no triggers/defaults here, so supply id + timestamps and use
+        # INSERT OR IGNORE (this path only runs in LOCAL_MODE / SQLite).
         await conn.execute(
             """
-            INSERT INTO "user" (id, name, email, "emailVerified")
-            VALUES ($1, $2, $3, TRUE)
-            ON CONFLICT (id) DO NOTHING
+            INSERT OR IGNORE INTO "user"
+                (id, name, email, "emailVerified", "createdAt", "updatedAt")
+            VALUES ($1, $2, $3, 1, $4, $4)
             """,
             LOCAL_USER_ID,
             _LOCAL_USER.name,
             _LOCAL_USER.email,
+            now,
         )
     logger.info("LOCAL_MODE on — running as implicit local user (no login).")
 

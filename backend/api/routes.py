@@ -1,7 +1,8 @@
 import json
 import logging
+from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
@@ -26,6 +27,12 @@ router = APIRouter(tags=["api"])
 
 # 2 GB per user (per-tier limits live in user_plans table once introduced).
 _DEFAULT_STORAGE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024
+
+
+def _now_iso() -> str:
+    """ISO-8601 UTC timestamp. Both engines store/compare these lexicographically;
+    Postgres parses the string into TIMESTAMPTZ on assignment."""
+    return datetime.now(UTC).isoformat()
 
 
 def _row_to_meta(row: Any) -> ProjectMeta:
@@ -80,16 +87,20 @@ async def create_project(
     body: CreateProjectRequest,
     user: SessionUser = Depends(get_current_user),
 ) -> ProjectCreateResponse:
+    new_id = str(uuid4())
+    now = _now_iso()
     pool = await get_db_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             """
-            INSERT INTO projects (user_id, name)
-            VALUES ($1, $2)
+            INSERT INTO projects (id, user_id, name, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $4)
             RETURNING id, user_id, name, created_at, updated_at
             """,
+            new_id,
             user.user_id,
             body.name,
+            now,
         )
 
     if row is None:
@@ -115,11 +126,12 @@ async def save_project(
             """
             UPDATE projects
             SET timeline_state = $1::jsonb,
-                updated_at = now()
-            WHERE id = $2 AND user_id = $3
+                updated_at = $2
+            WHERE id = $3 AND user_id = $4
             RETURNING id
             """,
             json.dumps(timeline.model_dump(mode="json")),
+            _now_iso(),
             str(project_id),
             user.user_id,
         )
@@ -181,11 +193,13 @@ async def rename_project(
         row = await conn.fetchrow(
             """
             UPDATE projects
-            SET name = $1
-            WHERE id = $2 AND user_id = $3
+            SET name = $1,
+                updated_at = $2
+            WHERE id = $3 AND user_id = $4
             RETURNING id
             """,
             body.name,
+            _now_iso(),
             str(project_id),
             user.user_id,
         )

@@ -15,7 +15,7 @@ from ai.routes import router as ai_router  # noqa: E402
 from api.routes import router as api_router  # noqa: E402
 from auth.routes import ensure_local_user  # noqa: E402
 from auth.routes import router as auth_router  # noqa: E402
-from db import close_db_pool  # noqa: E402
+from db import close_db_pool, init_local_schema  # noqa: E402
 from media.routes import router as media_router  # noqa: E402
 
 logging.basicConfig(
@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Starting up")
+    await init_local_schema()
     await ensure_local_user()
     yield
     logger.info("Shutting down — closing DB pool")
