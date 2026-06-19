@@ -39,6 +39,15 @@ keys, ni levantar servicios. Una sola app.
 
 ## Empezar
 
+Bajá el instalador desde **[Releases](https://github.com/frizynn/vibecut/releases)**
+y corré:
+
+```bash
+bash install.sh
+```
+
+O directamente desde el código:
+
 ```bash
 git clone https://github.com/frizynn/vibecut
 cd vibecut

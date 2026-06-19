@@ -1,14 +1,14 @@
-## Security Updates
+# Seguridad
 
-We take security seriously. Security updates are released as soon as possible after a vulnerability is discovered and verified.
+## Reportar una vulnerabilidad
 
-## Reporting a Vulnerability
+Si encontrás una vulnerabilidad, **no la publiques**. Reportala de forma privada
+por [GitHub Security Advisories](https://github.com/frizynn/vibecut/security/advisories/new).
 
-If you discover a security vulnerability, please follow these steps:
+Incluí:
+- Descripción de la vulnerabilidad.
+- Pasos para reproducirla.
+- Impacto potencial.
 
-1. **DO NOT** disclose the vulnerability publicly.
-2. Send a detailed report to: `robinroy.work@gmail.com`.
-3. Include in your report:
-   - A description of the vulnerability
-   - Steps to reproduce the issue
-   - Potential impact
+> Vibecut corre de forma **local** por defecto (sin login ni servicios expuestos),
+> así que la superficie de ataque es mínima en su uso normal.

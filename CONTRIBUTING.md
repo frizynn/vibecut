@@ -1,42 +1,27 @@
-# How to Contribute
+# Cómo contribuir
 
-We welcome all contributions to this project! Here are some simple ways you can help:
+¡Toda contribución es bienvenida!
 
-## Join Our Community
-Join our [Discord server](https://discord.com/invite/GSknuxubZK) to connect with other contributors and get help:
-- Chat with the community
-- Ask questions
-- Share ideas
-- Get support
+## Reportar bugs o pedir features
 
-## Report Issues or Suggest Features
-Found a bug or have an idea? Let us know!
-- Open an issue to report problems
-- Open an issue to suggest new features
-- Be clear about what you found or what you want
+- Abrí un [issue](https://github.com/frizynn/vibecut/issues) describiendo el
+  problema o la idea.
+- Sé concreto: qué esperabas, qué pasó y cómo reproducirlo.
 
-## Make Changes
-Want to fix something or add a feature?
-- Open a pull request (PR) with your changes
-- Look at open issues and try to solve them
-- Make sure your code works before submitting
+## Cambios en el código
 
-*Note: By submitting a pull request, you agree to the Contributor License Agreement (see below).*
+1. Forkeá el repo y creá una rama.
+2. Hacé tus cambios.
+3. Probá que funcione (`./start.sh`).
+4. Abrí un Pull Request.
 
-## Getting Started
-1. Fork the project
-2. Make your changes
-3. Test your changes
-4. Submit a pull request
+## Estilo
 
-## Contributor License Agreement
+- Backend (Python): tipado estricto (`mypy`) y `ruff` limpio.
+- Frontend (TypeScript): tipado estricto, mismo estilo que el código existente.
+- Nada de placeholders ni código muerto.
 
-By submitting code, documentation, or other contributions to this repository, you agree that your contributions are licensed under both:
+La arquitectura está documentada en [INTEGRATION.md](INTEGRATION.md).
 
-1. The open source AGPL license included in this repository, and  
-2. The commercial license under which this project is also distributed.  
-
-This means the maintainers may use, modify, and distribute your contributions under either license.  
-You retain copyright to your contributions, but you grant us a perpetual, worldwide license to include them in both the open source and commercial versions of this project.  
-
-If you do not agree to these terms, please do not submit contributions.
+> Vibecut es un fork de [Kimu](https://github.com/trykimu/videoeditor) bajo
+> AGPL-3.0. Tus contribuciones se licencian bajo la misma AGPL-3.0.
