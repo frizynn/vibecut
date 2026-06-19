@@ -186,8 +186,8 @@ export function ChatBox({
     }
   };
   const PROJECT_ID = getProjectIdFromPath();
-  const STORAGE_KEY = `kimu.chat.tabs.v2.${PROJECT_ID}`;
-  const ACTIVE_TAB_KEY = `kimu.chat.activeTab.v2.${PROJECT_ID}`;
+  const STORAGE_KEY = `vibecut.chat.tabs.v2.${PROJECT_ID}`;
+  const ACTIVE_TAB_KEY = `vibecut.chat.activeTab.v2.${PROJECT_ID}`;
 
   const getRecencyGroup = (ts: number) => {
     const now = Date.now();
@@ -1118,7 +1118,7 @@ export function ChatBox({
         <div ref={headerRef} className="h-7 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bot className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-sm font-medium tracking-tight">Ask Kimu</span>
+            <span className="text-sm font-medium tracking-tight">Ask Vibecut</span>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={createTab} title="New chat">
@@ -1305,9 +1305,9 @@ export function ChatBox({
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <Bot className="h-6 w-6 text-primary" />
             </div>
-            <h2 className="text-lg font-semibold mb-2">Ask Kimu</h2>
+            <h2 className="text-lg font-semibold mb-2">Ask Vibecut</h2>
             <p className="text-sm text-muted-foreground mb-8 max-w-xs leading-relaxed">
-              Kimu is your AI assistant for video editing. Ask questions, get help with timeline operations, or request
+              Vibecut is your AI assistant for video editing. Ask questions, get help with timeline operations, or request
               specific edits.
             </p>
             <div className="space-y-2 text-xs text-muted-foreground">
@@ -1507,7 +1507,7 @@ export function ChatBox({
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyPress}
-            placeholder="Ask Kimu..."
+            placeholder="Ask Vibecut..."
             className={cn(
               "w-full min-h-8 max-h-20 resize-none text-xs bg-transparent border-0 px-3 pt-2.5 pb-1 placeholder:text-muted-foreground/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
               "transition-all duration-200 leading-relaxed",

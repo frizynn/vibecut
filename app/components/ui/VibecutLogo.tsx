@@ -1,12 +1,12 @@
 import * as React from "react";
 
-interface KimuLogoProps extends React.SVGProps<SVGSVGElement> {
+interface VibecutLogoProps extends React.SVGProps<SVGSVGElement> {
   color?: string; // CSS color or tailwind class
   opacity?: number;
   animated?: boolean;
 }
 
-export const KimuLogo: React.FC<KimuLogoProps> = ({
+export const VibecutLogo: React.FC<VibecutLogoProps> = ({
   color = "currentColor",
   opacity = 1,
   className = "",
@@ -24,7 +24,7 @@ export const KimuLogo: React.FC<KimuLogoProps> = ({
       className={className + (animated ? " animate-float-icon transition-all duration-700" : "")}
       style={{ color, opacity, ...(style as React.CSSProperties) }}
       {...rest}
-      aria-label="Kimu Logo">
+      aria-label="Vibecut Logo">
       <path
         fillRule="evenodd"
         clipRule="evenodd"
@@ -35,4 +35,4 @@ export const KimuLogo: React.FC<KimuLogoProps> = ({
   );
 };
 
-export default KimuLogo;
+export default VibecutLogo;

@@ -1,5 +1,5 @@
 import { Clapperboard, Wand2, Scissors } from "lucide-react";
-import { KimuLogo } from "~/components/ui/KimuLogo";
+import { VibecutLogo } from "~/components/ui/VibecutLogo";
 import { FaGoogle } from "react-icons/fa";
 import { redirect, type LoaderFunctionArgs } from "react-router";
 import { requireUser } from "~/utils/auth.server";
@@ -85,10 +85,10 @@ export default function LoginPage() {
             {/* Specular highlight */}
             <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_50%_35%,rgba(255,255,255,0.10),transparent_55%)]" />
             <div className="relative z-10 grid h-full w-full place-items-center">
-              <KimuLogo className="h-14 w-14" />
+              <VibecutLogo className="h-14 w-14" />
             </div>
           </div>
-          <h1 className="mt-6 text-lg font-semibold tracking-tight">Welcome to Kimu</h1>
+          <h1 className="mt-6 text-lg font-semibold tracking-tight">Welcome to Vibecut</h1>
           <p className="mt-1 text-xs text-muted-foreground">Cinematic editing, reimagined.</p>
           <div className="mt-6 w-full max-w-sm flex flex-col items-center gap-3">
             <button

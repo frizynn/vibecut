@@ -14,7 +14,7 @@ export const LOCAL_MODE =
 
 const LOCAL_USER: SessionUser = {
   id: "local-user",
-  email: "local@kimu.app",
+  email: "local@vibecut.app",
   name: "Local",
   image: null,
 };

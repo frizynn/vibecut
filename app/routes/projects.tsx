@@ -23,7 +23,7 @@ import {
   ChevronRight,
   Pencil,
 } from "lucide-react";
-import { KimuLogo } from "~/components/ui/KimuLogo";
+import { VibecutLogo } from "~/components/ui/VibecutLogo";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -243,7 +243,7 @@ export default function Projects() {
   useEffect(() => {
     const fetchStars = async () => {
       try {
-        const res = await fetch("https://api.github.com/repos/trykimu/videoeditor");
+        const res = await fetch("https://api.github.com/repos/frizynn/vibecut");
         if (res.ok) {
           const data = await res.json();
           setStarCount(typeof data.stargazers_count === "number" ? data.stargazers_count : null);
@@ -291,8 +291,8 @@ export default function Projects() {
       />
       <header className="h-10 sm:h-12 border-b border-border/50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-3 sm:px-6">
         <div className="flex items-center gap-2 min-w-0">
-          <KimuLogo className="h-5 w-5 shrink-0" />
-          <span className="text-sm font-medium truncate">Kimu Studio</span>
+          <VibecutLogo className="h-5 w-5 shrink-0" />
+          <span className="text-sm font-medium truncate">Vibecut Studio</span>
         </div>
         <div className="flex items-center gap-2">
           <ProfileMenu
@@ -512,18 +512,18 @@ export default function Projects() {
           </ADFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* Playful Kimu mascot: gentle float in the corner; spin with chime on click */}
-      <style>{`@keyframes kimu-float { 0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)} }
-      @keyframes kimu-spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }`}</style>
+      {/* Playful Vibecut mascot: gentle float in the corner; spin with chime on click */}
+      <style>{`@keyframes vibecut-float { 0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)} }
+      @keyframes vibecut-spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }`}</style>
       <div
         className="fixed right-6 bottom-6 z-10 select-none"
         onClick={() => {
-          const el = document.getElementById("kimu-mascot");
+          const el = document.getElementById("vibecut-mascot");
           if (!el) return;
           // spin
-          el.style.animation = "kimu-spin 0.9s linear";
+          el.style.animation = "vibecut-spin 0.9s linear";
           setTimeout(() => {
-            el.style.animation = "kimu-float 3.5s ease-in-out infinite";
+            el.style.animation = "vibecut-float 3.5s ease-in-out infinite";
           }, 950);
           // chime (like landing)
           try {
@@ -558,14 +558,14 @@ export default function Projects() {
             make(783.99, 0.08, 0.22);
             make(987.77, 0.16, 0.18);
           } catch {
-            console.error("Kimu mascot chime failed");
+            console.error("Vibecut mascot chime failed");
           }
         }}>
-        <KimuLogo
-          id="kimu-mascot"
+        <VibecutLogo
+          id="vibecut-mascot"
           opacity={0.2}
           className="h-8 w-8 text-foreground cursor-pointer"
-          style={{ animation: "kimu-float 3.5s ease-in-out infinite" }}
+          style={{ animation: "vibecut-float 3.5s ease-in-out infinite" }}
           animated
         />
       </div>

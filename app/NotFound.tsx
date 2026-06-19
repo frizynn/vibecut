@@ -16,7 +16,7 @@ import {
   Sparkles,
   Stars,
 } from "lucide-react";
-import { KimuLogo } from "~/components/ui/KimuLogo";
+import { VibecutLogo } from "~/components/ui/VibecutLogo";
 import { GlowingEffect } from "~/components/ui/glowing-effect";
 import { useNavigate } from "react-router";
 
@@ -460,11 +460,11 @@ export default function NotFound(): React.ReactElement {
                 repeat: Infinity,
                 ease: "easeInOut",
               }}>
-              <KimuLogo className="w-4 h-4" />
+              <VibecutLogo className="w-4 h-4" />
             </motion.div>
             <div className="flex flex-col flex-1 min-w-0">
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-sm font-semibold text-foreground">Kimu</span>
+                <span className="text-sm font-semibold text-foreground">Vibecut</span>
                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
               </div>
               <div className="bg-muted/15 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm border border-border/30 w-fit max-w-[280px] sm:max-w-xs relative">
@@ -580,7 +580,7 @@ export default function NotFound(): React.ReactElement {
                   />
                   <div className="flex items-center gap-2 relative z-10">
                     <MessageCircle className="w-4 h-4" />
-                    <span>Start Creating with Kimu</span>
+                    <span>Start Creating with Vibecut</span>
                     <ArrowRight className="w-4 h-4" />
                   </div>
                 </Button>

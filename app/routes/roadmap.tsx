@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { KimuLogo } from "../components/ui/KimuLogo";
+import { VibecutLogo } from "../components/ui/VibecutLogo";
 import { Link } from "react-router";
 import { Github, Twitter, Play, Pause, ArrowLeft, Zap, Wand2, Sparkles, Users, Smartphone } from "lucide-react";
 
@@ -215,7 +215,7 @@ export default function Roadmap() {
         <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <KimuLogo className="w-6 h-6 text-foreground" />
+              <VibecutLogo className="w-6 h-6 text-foreground" />
               <span className="font-medium text-foreground">Roadmap</span>
             </Link>
 
@@ -228,7 +228,7 @@ export default function Roadmap() {
                 <Github className="w-5 h-5" />
               </a>
               <a
-                href="https://twitter.com/trykimu"
+                href="https://github.com/frizynn/vibecut"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors">

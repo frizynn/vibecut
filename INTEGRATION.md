@@ -1,4 +1,4 @@
-# Kimu fork — notas técnicas
+# Vibecut — notas técnicas
 
 Fork de [Kimu](https://github.com/trykimu/videoeditor) reconvertido en una **app
 local de un solo usuario**: sin login, sin claves de API, transcripción y corte

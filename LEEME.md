@@ -1,4 +1,4 @@
-# Kimu — editor de video con IA (local)
+# Vibecut — editor de video con IA (local)
 
 Editor de video que corre en tu compu. **Sin login, sin claves de API, sin nada
 que configurar.** Editás, le ponés subtítulos automáticos, cortás los silencios,
@@ -13,7 +13,7 @@ cambios por vos.
 ./install-app.sh      # una sola vez
 ```
 
-Después buscá **"Kimu"** en el menú de aplicaciones y abrila como cualquier
+Después buscá **"Vibecut"** en el menú de aplicaciones y abrila como cualquier
 programa. Se abre en su propia ventana.
 
 **Opción terminal:**

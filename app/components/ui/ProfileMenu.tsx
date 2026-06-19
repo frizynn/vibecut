@@ -122,7 +122,7 @@ export function ProfileMenu({
           <div className="flex items-center justify-center gap-1">
             <DropdownMenuItem asChild className="p-0">
               <a
-                href="https://github.com/trykimu/videoeditor"
+                href="https://github.com/frizynn/vibecut"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center h-8 rounded-md border border-border/40 px-3 hover:bg-accent/30 focus:bg-accent/30 focus:outline-none transition-colors"
@@ -148,7 +148,7 @@ export function ProfileMenu({
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="p-0">
               <a
-                href="https://x.com/trykimu"
+                href="https://github.com/frizynn/vibecut"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center w-14 h-8 rounded-md border border-border/40 px-2 hover:bg-accent/30 focus:bg-accent/30 focus:outline-none transition-colors"

@@ -45,7 +45,7 @@
 //     confidence: 0.99,
 //   },
 //   {
-//     text: " Kimu",
+//     text: " Vibecut",
 //     startMs: 1100,
 //     endMs: 1800,
 //     timestampMs: 1450,

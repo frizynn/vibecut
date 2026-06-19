@@ -49,7 +49,7 @@ def _materialize_to_tempfile(
     elif media_url:
         suffix = os.path.splitext(urlparse(media_url).path)[1]
 
-    fd, path = tempfile.mkstemp(suffix=suffix, prefix="kimu_media_")
+    fd, path = tempfile.mkstemp(suffix=suffix, prefix="vibecut_media_")
     written = 0
     try:
         with os.fdopen(fd, "wb") as dst:

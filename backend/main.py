@@ -37,10 +37,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(lifespan=lifespan, redirect_slashes=False)
 
+# localhost for dev; in production set BETTER_AUTH_URL to your public origin.
 _ALLOWED_ORIGINS = [
-    "https://trykimu.com",
     "http://localhost:5173",  # Vite dev server
 ]
+_prod_origin = os.getenv("BETTER_AUTH_URL")
+if _prod_origin and _prod_origin.startswith("https://"):
+    _ALLOWED_ORIGINS.append(_prod_origin)
 
 app.add_middleware(
     CORSMiddleware,

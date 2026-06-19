@@ -5,7 +5,7 @@ installed and logged-in `claude` (Claude Code) or `codex` (OpenAI Codex) CLI in
 headless mode. Both authenticate with the user's existing subscription, so the
 copilot needs NO API key.
 
-Each function takes the already-built Kimu prompt and the JSON Schema of the
+Each function takes the already-built Vibecut prompt and the JSON Schema of the
 expected structured response, runs the CLI, and returns the parsed dict for the
 caller to validate against FunctionCallResponse.
 """
@@ -42,7 +42,7 @@ def detect_backend(requested: str | None, gemini_available: bool) -> str:
 _CLI_TIMEOUT_SECONDS = 180
 
 _SYSTEM_PROMPT = (
-    "You are Kimu, an AI video-editing assistant. Decide the single tool call "
+    "You are Vibecut, an AI video-editing assistant. Decide the single tool call "
     "that satisfies the user's request, or return assistant_message with "
     "function_call=null for greetings or ambiguous requests. Respond with the "
     "structured output only — no prose, no code fences."
@@ -124,7 +124,7 @@ async def call_claude_code(prompt: str, schema: dict[str, Any]) -> dict[str, Any
 async def call_codex(prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
     """Run Codex headlessly and return the structured response dict."""
     strict_schema = _strictify_schema(schema)
-    with tempfile.TemporaryDirectory(prefix="kimu_codex_") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="vibecut_codex_") as tmpdir:
         schema_path = Path(tmpdir) / "schema.json"
         out_path = Path(tmpdir) / "out.json"
         schema_path.write_text(json.dumps(strict_schema))

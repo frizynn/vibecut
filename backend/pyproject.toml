@@ -1,7 +1,7 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Kimu"
+description = "Vibecut"
 readme = "README.md"
 license = { file = "../LICENSE.md" }
 classifiers = [

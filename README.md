@@ -1,179 +1,78 @@
-
 <br />
 
 <p align="center">
-  <img width="3200" height="804" alt="image" src="https://github.com/user-attachments/assets/08149933-609a-4556-8ab4-4ef2622a9c8f" />
-
+  <img width="120" src="public/favicon.png" alt="Vibecut" />
 </p>
-<p align="center">A friendly AI powered open-source alternative to Capcut, Canva.<br><samp>
-<a href="https://discord.gg/24Mt5DGcbx"> Discord</a> &nbsp; <a href="https://x.com/trykimu"> Twitter</a> &nbsp; <a href="https://trykimu.com"> Website</a></p>
-</samp>
 
-## ✨Features
+<h1 align="center">Vibecut</h1>
 
-<table>
-  <tr>
-    <td>
-      <img src="https://github.com/user-attachments/assets/c504e379-110d-4286-b2b7-7676aa186112" />
-      <h2 align="center">Advanced Multi‑Track Editing</h2>
-      <p align="center">Edit across unlimited tracks with precise control, snapping, and effortless layer management.</p>
-      <br>
-    </td>
-    <td>
-      <img width="1600" height="1000" alt="image" src="https://github.com/user-attachments/assets/94f05873-2f52-46ad-831a-55936f7999da" />
-      <h2 align="center">Real‑Time Preview</h2>
-      <p align="center">See every change instantly with low‑latency playback—no waiting, no rendering.</p>
-      <br>
-    </td>
-    <td>
-      <img src="https://github.com/user-attachments/assets/3f464355-d290-4586-aead-f9a1a3c58d63" />
-      <h2 align="center">Fast Export</h2>
-      <p align="center">Render high‑quality videos quickly and export exactly where you need them.</p>
-      <br>
-    </td>
-    </tr>
-    <tr>
-      <td>
-        <img src="https://github.com/user-attachments/assets/32920f51-4faf-442f-92fc-50d4809cd290" /><h2 align="center">Vibe AI Assistant</h2>
-        <p align="center">Describe your idea and let Kimu generate edits, timing, and layouts automatically.</p>
-        <br>
-      </td>
-    <td>
-      <img src="https://github.com/user-attachments/assets/0527e006-8438-466e-83ef-b05d7f98604b" />
-      <h2 align="center">Smart Media Library</h2>
-      <p align="center">Organize by type, tags, and sentiment—search and filter your assets in seconds.</p>
-      <br>
-    </td>
-    <td>
-      <img src="https://github.com/user-attachments/assets/dae66fb2-3e53-46ce-8fe0-10e62ac3cf70" />
-      <h2 align="center">Cloud‑Synced Projects</h2>
-      <p align="center">Keep timelines and assets in sync across devices so you can pick up right where you left off.</p>
-      <br>
-    </td>
-  </tr>
-</table>
-<p align="center">transitions, offline datastore, OAuth based security, change control
-<br> and much more...</p>
-</samp>
+<p align="center">
+  Editor de video local con IA — transcripción, corte de silencios y un copiloto
+  que usa tu agente (Claude Code / Codex). <strong>Sin login, sin claves de API, sin Docker.</strong>
+</p>
 
-## 💻 Development
+<p align="center">
+  <a href="LEEME.md">Guía rápida (ES)</a> &nbsp;·&nbsp;
+  <a href="INTEGRATION.md">Notas técnicas</a> &nbsp;·&nbsp;
+  <a href="https://github.com/frizynn/vibecut">GitHub</a>
+</p>
 
-<strong> 🛠️ <ins>Local Development</ins></strong>
+---
 
-Only postgres runs in Docker. All three services run directly on your machine — Vite handles proxying so no nginx is needed.
+## Qué es
+
+Vibecut es un editor de video que corre **entero en tu máquina**. Edita, ponele
+subtítulos automáticos, cortá los silencios, agregá emojis — o **hablale a un
+copiloto en español** para que haga los cambios por vos.
+
+Pensado para que cualquiera lo use: no hay que crear cuenta, ni conseguir API
+keys, ni levantar servicios. Una sola app.
+
+## Features
+
+- 🎬 **Editor completo**: timeline multipista, preview en vivo, transiciones, texto, export.
+- 💬 **Subtítulos automáticos**: transcripción local con Whisper → captions en el timeline.
+- ✂️ **Corte de silencios** automático (deja el corte contiguo, sin huecos).
+- 😀 **Emojis** y textos.
+- 🤖 **Copiloto agéntico**: pedile en lenguaje natural ("cortá los silencios y ponele subtítulos").
+- 🔒 **Privado y local**: tus videos no salen de tu compu.
+
+## Empezar
 
 ```bash
-# Install dependencies
-pnpm i
-cd backend && uv sync && cd ..
-
-# 1. Start postgres
-docker compose -f docker-compose.dev.yml up -d
-
-# 2. Start FastAPI  (terminal 1)
-cd backend && uv run uvicorn main:app --reload --port 3000
-
-# 3. Start renderer  (terminal 2)
-pnpm dlx tsx app/videorender/videorender.ts
-
-# 4. Start frontend  (terminal 3)
-pnpm dev
+git clone https://github.com/frizynn/vibecut
+cd vibecut
+./install-app.sh    # una vez: lo deja como app del menú
 ```
 
-Open **`http://localhost:5173`**. The Vite dev server proxies requests transparently:
+Después buscá **"Vibecut"** en el menú de aplicaciones, o corré `./start.sh`.
+Se abre en su propia ventana. La primera vez instala las dependencias solo.
 
-<samp>
+**Requisitos** (una vez): [Node.js](https://nodejs.org/) + [pnpm](https://pnpm.io/),
+[uv](https://docs.astral.sh/uv/), y **ffmpeg**. No hace falta Docker.
 
-- `/backend/*` → FastAPI at `:3000`
-- `/renderer/*` → Renderer at `:8000`
-- `/*` → React Router SSR (Vite)
+Guía paso a paso en español: **[LEEME.md](LEEME.md)**.
 
-</samp>
+## El copiloto, sin claves de API
 
-`Requirements`
+El copiloto detecta **automáticamente** qué agente tenés instalado y usa tu
+suscripción — no necesita ninguna API key:
 
-<samp>
-  
-- Node.js 20+
-- Python 3.12+
-- pnpm
-- Docker (for postgres only)
+1. **Claude Code** (`claude`) → tu suscripción de Claude.
+2. si no, **Codex** (`codex`) → tu suscripción de ChatGPT.
+3. si no hay ninguno, **Gemini** (con una key gratis opcional).
 
-</samp>
+Configurable con `AI_BACKEND` en `.env` (`auto` por defecto).
 
-## 🚀 Production
+## Cómo está hecho
 
-Everything runs in Docker behind nginx. One command:
+React + React Router (frontend) · FastAPI / Python (motor) · Remotion (render) ·
+SQLite en modo local (sin Postgres ni Redis). Detalles en
+[INTEGRATION.md](INTEGRATION.md).
 
-```bash
-docker compose up -d
-```
+## Créditos y licencia
 
-**With Custom Domain:**
-
-```bash
-PROD_DOMAIN=yourdomain.com docker compose up -d
-```
-
-nginx routes:
-
-<samp>
-
-- `/backend/*` → FastAPI
-- `/renderer/*` → Renderer (video rendering)
-- `/*` → Frontend (React Router SSR)
-
-</samp>
-
-**Ports:**
-
-- HTTP: `80` (redirects to HTTPS)
-- HTTPS: `443`
-
-## ⚙️ Environment Configuration
-
-Copy `.env.example` to `.env` and fill in your values:
-
-```env
-# Local/Docker Postgres (dev or self-hosted prod):
-DATABASE_URL=postgresql://videoeditor:videoeditor@localhost:5432/videoeditor
-
-# — OR — Supabase Session Pooler (cloud):
-DATABASE_URL=postgresql://postgres.REF:password@aws-0-REGION.pooler.supabase.com:5432/postgres
-DATABASE_SSL=true   # required for Supabase; omit for local/Docker Postgres
-
-# BetterAuth
-BETTER_AUTH_SECRET=   # generate with: openssl rand -hex 32
-BETTER_AUTH_URL=https://yourdomain.com   # http://localhost:5173 for dev
-
-# Google OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# AI Features (optional)
-GEMINI_API_KEY=your_gemini_api_key
-```
-
-**Environment Variables Explained:**
-
-- `DATABASE_URL`: PostgreSQL connection string. Use the local Docker URL for dev/self-hosted prod, or the Supabase Session Pooler URL for cloud.
-- `DATABASE_SSL`: Set to `"true"` when connecting to Supabase or any remote DB that requires SSL. Leave unset for local/Docker Postgres.
-- `BETTER_AUTH_SECRET`: Random secret used to sign sessions — generate with `openssl rand -hex 32`.
-- `BETTER_AUTH_URL`: The public URL of the app. Used by BetterAuth for OAuth callbacks.
-- `GOOGLE_CLIENT_ID/SECRET`: Google OAuth credentials — register at [console.cloud.google.com](https://console.cloud.google.com).
-- `GEMINI_API_KEY`: Required for AI-powered video editing features.
-
-<br>
-
-## 📃TODO
-
-<samp> We have a lot of work! For starters, we plan to integrate all Remotion APIs. I'll add a proper roadmap soon. Join the [Discord Server](https://discord.com/invite/GSknuxubZK) for updates and support. </samp>
-
-## ❤️Contribution
-
-<samp> We would love your contributions! ❤️ Check the [contribution guide](CONTRIBUTING.md). </samp>
-
-## 📜License
-
-<samp> This project is licensed under a dual-license. Refer to [LICENSE](LICENSE.md) for details. The [Remotion license](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md) also applies to the relevant parts of the project. </samp>
-
+Vibecut es un fork de **[Kimu](https://github.com/trykimu/videoeditor)**, bajo
+**GNU AGPL-3.0** (ver [LICENSE](LICENSE.md)). Aplica también la
+[licencia de Remotion](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md)
+en las partes correspondientes.

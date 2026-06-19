@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 LOCAL_USER_ID = "local-user"
 _LOCAL_USER = SessionUser(
     user_id=LOCAL_USER_ID,
-    email="local@kimu.app",
+    email="local@vibecut.app",
     name="Local",
     image=None,
 )

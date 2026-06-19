@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence, motion as m, type TargetAndTransition } from "framer-motion";
-import { KimuLogo } from "../components/ui/KimuLogo";
+import { VibecutLogo } from "../components/ui/VibecutLogo";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
@@ -92,7 +92,7 @@ export default function Landing() {
 
     const fetchGitHubStars = async () => {
       try {
-        const res = await fetch("https://api.github.com/repos/trykimu/videoeditor");
+        const res = await fetch("https://api.github.com/repos/frizynn/vibecut");
         const data = await res.json();
         setGitHubStars(data.stargazers_count || 0);
       } catch (error) {
@@ -118,8 +118,8 @@ export default function Landing() {
         </>
       ),
       desc: "A new way to edit. Effortless, playful, and powerful.",
-      subtext: "Creators save time while Kimu handles the heavy lifting.",
-      subtext2: "For creators who'd rather be creating. If editing drains you — Kimu gives your time back.",
+      subtext: "Creators save time while Vibecut handles the heavy lifting.",
+      subtext2: "For creators who'd rather be creating. If editing drains you — Vibecut gives your time back.",
       badges: ["AI-Powered", "Instant Preview", "Creator DNA"],
       start: 0,
       duration: 30,
@@ -183,7 +183,7 @@ export default function Landing() {
         </>
       ),
       desc: "Smart suggestions that learn your style and automate repetitive tasks.",
-      subtext: "Kimu Copilot helps you edit faster with smart, context-aware suggestions.",
+      subtext: "Vibecut Copilot helps you edit faster with smart, context-aware suggestions.",
       subtext2: "Automate the boring, focus on the magic.",
       badges: ["AI Copilot", "Smart Suggestions", "Automation"],
       start: 90,
@@ -225,7 +225,7 @@ export default function Landing() {
         </>
       ),
       desc: "Transform raw footage into polished stories with one-click magic.",
-      subtext: "Let Kimu handle the technicals while you focus on the vibe.",
+      subtext: "Let Vibecut handle the technicals while you focus on the vibe.",
       subtext2: "One-click story magic for creators.",
       badges: ["Vibe Engine", "One-click Magic", "Story Polishing"],
       start: 154,
@@ -318,7 +318,7 @@ export default function Landing() {
     {
       id: 1,
       isUser: false,
-      content: "Hi! I'm Kimu Copilot. How can I help you edit your video today?",
+      content: "Hi! I'm Vibecut Copilot. How can I help you edit your video today?",
       timestamp: new Date(),
     },
     {
@@ -413,9 +413,9 @@ export default function Landing() {
                 className="cursor-pointer"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}>
-                <KimuLogo className="w-16 h-16 text-foreground" />
+                <VibecutLogo className="w-16 h-16 text-foreground" />
               </motion.div>
-              <h1 className="text-4xl md:text-5xl font-bold text-foreground">Kimu</h1>
+              <h1 className="text-4xl md:text-5xl font-bold text-foreground">Vibecut</h1>
             </motion.div>
             <div className="mt-4 max-w-4xl">
               <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-foreground">
@@ -427,7 +427,7 @@ export default function Landing() {
                 </span>
               </h2>
               <p className="mt-4 text-lg md:text-xl text-muted-foreground max-w-2xl">
-                Kimu is a playful, zero‑latency video editor with an AI copilot. Create, upload and edit at the speed of
+                Vibecut is a playful, zero‑latency video editor with an AI copilot. Create, upload and edit at the speed of
                 thought.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -461,8 +461,8 @@ export default function Landing() {
                 {/* Top Menu Bar */}
                 <div className="h-12 bg-muted/10 border-b border-border/20 hidden sm:flex items-center px-6 text-sm relative z-10">
                   <div className="flex items-center gap-2 mr-8">
-                    <KimuLogo className="w-5 h-5 text-foreground" />
-                    <span className="font-medium">Kimu Studio</span>
+                    <VibecutLogo className="w-5 h-5 text-foreground" />
+                    <span className="font-medium">Vibecut Studio</span>
                   </div>
 
                   <div className="flex items-center gap-6 text-muted-foreground text-xs">
@@ -817,7 +817,7 @@ export default function Landing() {
                           </motion.div>
                         )}
                         <p className="text-xs leading-relaxed mt-3 text-white/20 relative z-20">
-                          Get notified when Kimu launches. No spam, just updates on the future of video editing.
+                          Get notified when Vibecut launches. No spam, just updates on the future of video editing.
                         </p>
                       </div>
                     </div>
@@ -825,7 +825,7 @@ export default function Landing() {
                     {/* Copilot Chat Card: pin input to bottom, messages scroll above */}
                     <div className="bg-background/25 backdrop-blur-sm border border-border/20 rounded-xl p-1 shadow-md flex flex-col flex-1 w-full opacity-25 relative overflow-hidden">
                       <div className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                        <Bot className="h-4 w-4 text-muted-foreground" /> Kimu Copilot
+                        <Bot className="h-4 w-4 text-muted-foreground" /> Vibecut Copilot
                       </div>
                       <div
                         className="flex-1 overflow-y-auto space-y-3 pr-1 mb-2"
@@ -848,7 +848,7 @@ export default function Landing() {
                         className="flex items-center gap-2 pt-2 border-t border-border/20 bg-background/80 absolute left-0 right-0 bottom-0 p-3"
                         style={{ zIndex: 2 }}>
                         <textarea
-                          placeholder="Ask Kimu..."
+                          placeholder="Ask Vibecut..."
                           className="flex-1 rounded-lg border border-border/60 bg-background px-3 pt-2.5 pb-1 text-xs placeholder:text-muted-foreground/90 focus:outline-none transition-all duration-200 shadow-sm resize-none min-h-8 max-h-20 leading-relaxed"
                           rows={1}
                           disabled
@@ -986,7 +986,7 @@ export default function Landing() {
             {/* Left: cleaner mock plugin window */}
             <div className="rounded-2xl border border-border/20 bg-background p-0 overflow-hidden relative">
               <div className="h-10 border-b border-border/20 flex items-center px-4 gap-3">
-                <div className="text-xs text-muted-foreground">Kimu • Plugins</div>
+                <div className="text-xs text-muted-foreground">Vibecut • Plugins</div>
               </div>
               {/* content */}
               <div className="grid sm:grid-cols-2">
@@ -1069,7 +1069,7 @@ export default function Landing() {
                 <h3 className="text-2xl font-bold text-foreground">Plugin ecosystem</h3>
               </div>
               <p className="text-muted-foreground mb-6 max-w-prose">
-                Extend Kimu without forking the editor. Install community plugins or build your own for effects,
+                Extend Vibecut without forking the editor. Install community plugins or build your own for effects,
                 automations, and export pipelines — powered by a simple, sandboxed API.
               </p>
               <div className="grid sm:grid-cols-3 gap-4">
@@ -1136,7 +1136,7 @@ export default function Landing() {
               <div className="relative h-72 [transform:perspective(1200px)_rotateX(12deg)_rotateY(-6deg)]">
                 {/* Toolbar */}
                 <div className="h-10 flex items-center justify-between px-4 rounded-md border border-border/30 bg-black/40 shadow-sm mb-4">
-                  <div className="text-[11px] text-muted-foreground">🎬 Teaser.mp4 • Project Kimu</div>
+                  <div className="text-[11px] text-muted-foreground">🎬 Teaser.mp4 • Project Vibecut</div>
                   <div className="flex items-center gap-3 text-[11px]">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-[pulse_2s_ease-in-out_infinite]" />
                     <span className="text-muted-foreground">synced</span>
@@ -1285,7 +1285,7 @@ export default function Landing() {
               <Button className="bg-foreground text-background hover:bg-foreground/90">Start editing</Button>
             </Link>
             <a
-              href="https://github.com/trykimu/videoeditor"
+              href="https://github.com/frizynn/vibecut"
               target="_blank"
               rel="noreferrer"
               className="text-sm underline text-muted-foreground hover:text-foreground">
@@ -1367,9 +1367,9 @@ function MobileTimelinePlayground({ timelineAssets, handleLogoClick, logoSpinnin
         {/* Mascot and Playful Animation */}
         <div className="flex items-center gap-3 mb-2">
           <div onClick={handleLogoClick} className="cursor-pointer select-none" style={{ display: "inline-block" }}>
-            <KimuLogo className={`w-10 h-10 text-foreground ${logoSpinning ? "animate-spin" : ""}`} />
+            <VibecutLogo className={`w-10 h-10 text-foreground ${logoSpinning ? "animate-spin" : ""}`} />
           </div>
-          <span className="text-lg font-bold text-foreground">Kimu Editor</span>
+          <span className="text-lg font-bold text-foreground">Vibecut Editor</span>
         </div>
         {/* Animated Feature Preview */}
         <div className="flex flex-col items-start gap-1">
@@ -1431,7 +1431,7 @@ function MobileTimelinePlayground({ timelineAssets, handleLogoClick, logoSpinnin
           <div className={`h-2 bg-blue-500 rounded transition-all duration-700 ${exporting ? "w-full" : "w-0"}`} />
         </div>
         <p className="text-xs text-muted-foreground text-left mt-1">
-          Get notified when Kimu launches. No spam, just creative updates.
+          Get notified when Vibecut launches. No spam, just creative updates.
         </p>
       </div>
     </div>
@@ -1525,8 +1525,8 @@ function MobileVideoEditorPreview({
               {/* App Header - Thinner */}
               <div className="h-8 bg-muted/10 border-b border-border/20 flex items-center px-4">
                 <div className="flex items-center gap-2">
-                  <KimuLogo className="w-4 h-4 text-foreground" />
-                  <span className="text-xs font-semibold text-foreground">Kimu Studio</span>
+                  <VibecutLogo className="w-4 h-4 text-foreground" />
+                  <span className="text-xs font-semibold text-foreground">Vibecut Studio</span>
                 </div>
                 <div className="flex-1" />
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -1749,7 +1749,7 @@ function MobileVideoEditorPreview({
                 </motion.div>
               )}
               <p className="text-xs leading-relaxed mt-3 text-white/20">
-                Get notified when Kimu launches. No spam, just updates on the future of video editing.
+                Get notified when Vibecut launches. No spam, just updates on the future of video editing.
               </p>
             </div>
           </div>
@@ -1757,8 +1757,8 @@ function MobileVideoEditorPreview({
       </div>
       {/* Mobile outer outline */}
       {/* <svg className="pointer-events-none absolute -inset-[8px] w-[calc(100%+16px)] h-[calc(100%+16px)]" viewBox="0 0 1000 1000" preserveAspectRatio="none">
-        <rect x="12" y="12" width="976" height="976" rx="24" ry="24" fill="none" stroke="#60a5fa" strokeOpacity="0.18" strokeWidth="5" className="[stroke-dasharray:180_4200] animate-[kimu-dash-slow_20s_linear_infinite]" />
-        <rect x="12" y="12" width="976" height="976" rx="24" ry="24" fill="none" stroke="#9ae6ff" strokeWidth="2" className="[stroke-dasharray:80_4300] animate-[kimu-dash-slow_20s_linear_infinite]" />
+        <rect x="12" y="12" width="976" height="976" rx="24" ry="24" fill="none" stroke="#60a5fa" strokeOpacity="0.18" strokeWidth="5" className="[stroke-dasharray:180_4200] animate-[vibecut-dash-slow_20s_linear_infinite]" />
+        <rect x="12" y="12" width="976" height="976" rx="24" ry="24" fill="none" stroke="#9ae6ff" strokeWidth="2" className="[stroke-dasharray:80_4300] animate-[vibecut-dash-slow_20s_linear_infinite]" />
       </svg> */}
     </div>
   );

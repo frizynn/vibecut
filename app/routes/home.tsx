@@ -79,7 +79,7 @@ import {
 } from "~/components/timeline/types";
 import { useNavigate, useParams, useLocation } from "react-router";
 import { ChatBox } from "~/components/chat/ChatBox";
-import { KimuLogo } from "~/components/ui/KimuLogo";
+import { VibecutLogo } from "~/components/ui/VibecutLogo";
 import { GitHubRepoStatsSchema, ProjectStateResponseSchema, TimelineStateSchema } from "~/schemas";
 
 interface Message {
@@ -942,8 +942,8 @@ export default function TimelineEditor() {
       {/* Ultra-minimal Top Bar */}
       <header className="h-9 border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-3 shrink-0">
         <div className="flex items-center gap-2">
-          <KimuLogo className="h-4 w-4" />
-          <h1 className="text-sm font-medium tracking-tight">Kimu Studio</h1>
+          <VibecutLogo className="h-4 w-4" />
+          <h1 className="text-sm font-medium tracking-tight">Vibecut Studio</h1>
         </div>
 
         {/* Center: project name */}

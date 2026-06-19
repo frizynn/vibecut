@@ -1,7 +1,7 @@
 services:
   redis:
     image: redis:7-alpine
-    container_name: videoeditor-redis
+    container_name: vibecut-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
@@ -14,7 +14,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: videoeditor-nginx
+    container_name: vibecut-nginx
     ports:
       - "80:80"
       - "443:443"
@@ -36,11 +36,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    container_name: videoeditor-frontend
+    container_name: vibecut-frontend
     env_file:
       - .env
     environment:
-      BETTER_AUTH_URL: https://trykimu.com
+      BETTER_AUTH_URL: https://your-domain.com
       BACKEND_INTERNAL_URL: http://fastapi:3000
       NODE_ENV: production
       HOST: 0.0.0.0
@@ -69,11 +69,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: videoeditor-backend
+    container_name: vibecut-backend
     env_file:
       - .env
     environment:
-      BETTER_AUTH_URL: https://trykimu.com
+      BETTER_AUTH_URL: https://your-domain.com
       NODE_ENV: production
       PORT: 8000
       REDIS_URL: redis://redis:6379/0
@@ -102,7 +102,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: videoeditor-fastapi
+    container_name: vibecut-fastapi
     env_file:
       - .env
     environment:

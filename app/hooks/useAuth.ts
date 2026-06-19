@@ -13,7 +13,7 @@ type AuthUser = {
 const LOCAL_MODE = import.meta.env.VITE_LOCAL_MODE !== "false";
 const LOCAL_USER: AuthUser = {
   id: "local-user",
-  email: "local@kimu.app",
+  email: "local@vibecut.app",
   name: "Local",
   image: null,
 };

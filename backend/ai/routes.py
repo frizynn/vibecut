@@ -193,7 +193,7 @@ async def process_ai_message(
     history = (request.chat_history or [])[-_MAX_HISTORY_ITEMS:]
 
     prompt = f"""
-You are Kimu, an AI video-editing assistant.
+You are Vibecut, an AI video-editing assistant.
 
 ## Response rules
 - Call ONE tool when the user explicitly requests an editing action.

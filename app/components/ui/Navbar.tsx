@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
-import { KimuLogo } from "~/components/ui/KimuLogo";
+import { VibecutLogo } from "~/components/ui/VibecutLogo";
 import { Github, Twitter } from "lucide-react";
 import { TbBrandDiscord } from "react-icons/tb";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,7 +17,7 @@ export function Navbar({ showBrand = true }: NavbarProps) {
   useEffect(() => {
     const fetchGitHubStars = async () => {
       try {
-        const res = await fetch("https://api.github.com/repos/trykimu/videoeditor");
+        const res = await fetch("https://api.github.com/repos/frizynn/vibecut");
         const data = await res.json();
         setGitHubStars(data.stargazers_count || 0);
       } catch (error) {
@@ -50,7 +50,7 @@ export function Navbar({ showBrand = true }: NavbarProps) {
                       ease: [0.4, 0.0, 0.2, 1],
                       delay: 0.1,
                     }}>
-                    <KimuLogo className={`w-6 h-6 text-foreground ${spin ? "animate-spin" : ""}`} />
+                    <VibecutLogo className={`w-6 h-6 text-foreground ${spin ? "animate-spin" : ""}`} />
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -67,7 +67,7 @@ export function Navbar({ showBrand = true }: NavbarProps) {
                       ease: [0.4, 0.0, 0.2, 1],
                       delay: 0.2,
                     }}>
-                    Kimu
+                    Vibecut
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -77,7 +77,7 @@ export function Navbar({ showBrand = true }: NavbarProps) {
           {/* Center navigation - will stay fixed */}
           <nav className="hidden md:flex items-center gap-5 text-sm text-muted-foreground">
             <a
-              href="http://deepwiki.com/trykimu/videoeditor/"
+              href="https://github.com/frizynn/vibecut"
               target="_blank"
               rel="noreferrer"
               className="hover:text-foreground transition-colors">
@@ -94,7 +94,7 @@ export function Navbar({ showBrand = true }: NavbarProps) {
           {/* Right side actions */}
           <div className="flex items-center gap-3">
             <a
-              href="https://github.com/trykimu/videoeditor"
+              href="https://github.com/frizynn/vibecut"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-lg border border-border/30 bg-muted/20 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors">
@@ -102,7 +102,7 @@ export function Navbar({ showBrand = true }: NavbarProps) {
               <span>{gitHubStars}</span>
             </a>
             <a
-              href="https://twitter.com/trykimu"
+              href="https://github.com/frizynn/vibecut"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors">

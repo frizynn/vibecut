@@ -1,16 +1,16 @@
-import { KimuLogo } from "~/components/ui/KimuLogo";
+import { VibecutLogo } from "~/components/ui/VibecutLogo";
 
 export function Footer() {
   return (
     <footer className="w-full border-t border-border/30 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50">
       <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
         <div className="inline-flex items-center gap-2">
-          <KimuLogo className="w-4 h-4" />
-          <span>© {new Date().getFullYear()} Kimu Studio</span>
+          <VibecutLogo className="w-4 h-4" />
+          <span>© {new Date().getFullYear()} Vibecut Studio</span>
         </div>
         <nav className="flex flex-wrap items-center gap-4">
           <a
-            href="http://deepwiki.com/trykimu/videoeditor/"
+            href="https://github.com/frizynn/vibecut"
             target="_blank"
             rel="noreferrer"
             className="hover:text-foreground">
@@ -29,7 +29,7 @@ export function Footer() {
             Roadmap
           </a>
           <a
-            href="https://github.com/trykimu/videoeditor"
+            href="https://github.com/frizynn/vibecut"
             target="_blank"
             rel="noreferrer"
             className="hover:text-foreground">
@@ -38,7 +38,7 @@ export function Footer() {
           <a href="https://discord.gg/24Mt5DGcbx" target="_blank" rel="noreferrer" className="hover:text-foreground">
             Discord
           </a>
-          <a href="https://twitter.com/trykimu" target="_blank" rel="noreferrer" className="hover:text-foreground">
+          <a href="https://github.com/frizynn/vibecut" target="_blank" rel="noreferrer" className="hover:text-foreground">
             Twitter
           </a>
         </nav>

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Calendar } from "lucide-react";
-import { KimuLogo } from "~/components/ui/KimuLogo";
+import { VibecutLogo } from "~/components/ui/VibecutLogo";
 import { GlowingEffect } from "~/components/ui/glowing-effect";
 
 export default function Terms() {
@@ -18,7 +18,7 @@ export default function Terms() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border/30 text-xs text-muted-foreground mb-4">
             Terms of Service
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Kimu Terms of Service</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Vibecut Terms of Service</h1>
           <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <Calendar className="w-4 h-4" /> Effective {lastUpdated}
@@ -37,12 +37,12 @@ export default function Terms() {
           {/* Document Header Preamble */}
           <div className="text-left mb-8 pb-6 border-b border-border/20">
             <div className="flex items-center justify-center gap-3 mb-3">
-              <KimuLogo className="w-6 h-6 text-foreground" />
-              <span className="text-sm font-semibold tracking-tight">Kimu</span>
+              <VibecutLogo className="w-6 h-6 text-foreground" />
+              <span className="text-sm font-semibold tracking-tight">Vibecut</span>
             </div>
             <div className="mx-auto max-w-3xl rounded-lg border border-border/30 bg-muted/5 px-4 py-3 text-xs font-mono text-muted-foreground">
-              These Terms of Service ("Terms") govern your access to and use of Kimu — a web‑based video editor with AI
-              features and optional cloud storage and collaboration. By creating an account or using Kimu, you agree to
+              These Terms of Service ("Terms") govern your access to and use of Vibecut — a web‑based video editor with AI
+              features and optional cloud storage and collaboration. By creating an account or using Vibecut, you agree to
               these Terms.
             </div>
           </div>
@@ -55,8 +55,8 @@ export default function Terms() {
                 <h2 className="text-2xl font-bold mb-4 pl-2">1. Acceptance of Terms</h2>
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
-                    By accessing or using Kimu, you accept these Terms and our Privacy Policy. If you don’t agree, do
-                    not use Kimu.
+                    By accessing or using Vibecut, you accept these Terms and our Privacy Policy. If you don’t agree, do
+                    not use Vibecut.
                   </p>
                   <p>
                     Where required by law, additional terms may apply (e.g., consumer rights). If there is a conflict,
@@ -70,7 +70,7 @@ export default function Terms() {
                 <h2 className="text-2xl font-bold mb-4 pl-2">2. Eligibility & Accounts</h2>
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <ul className="list-disc ml-6 space-y-1">
-                    <li>You must be at least 13 years old (or the minimum age in your country) to use Kimu.</li>
+                    <li>You must be at least 13 years old (or the minimum age in your country) to use Vibecut.</li>
                     <li>You are responsible for your account credentials and for all activity under your account.</li>
                     <li>We may require identity checks for abuse prevention, fraud, or legal compliance.</li>
                   </ul>
@@ -82,7 +82,7 @@ export default function Terms() {
                 <h2 className="text-2xl font-bold mb-4 pl-2">3. Service Description</h2>
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
-                    Kimu provides a browser‑based non‑linear video editor, AI‑assisted features (e.g., cuts, captions,
+                    Vibecut provides a browser‑based non‑linear video editor, AI‑assisted features (e.g., cuts, captions,
                     titles, effects, transitions), and optional cloud projects for storage and collaboration. Features
                     may vary by plan and region, and may evolve over time.
                   </p>
@@ -99,10 +99,10 @@ export default function Terms() {
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
                     You retain ownership of the videos, audio, images, text, and other content you upload or create in
-                    Kimu ("User Content").
+                    Vibecut ("User Content").
                   </p>
                   <p>
-                    To operate Kimu, you grant us a limited, worldwide, non‑exclusive license to host, cache, process,
+                    To operate Vibecut, you grant us a limited, worldwide, non‑exclusive license to host, cache, process,
                     transmit, render, and display your User Content solely to provide and improve the service, including
                     generating previews, thumbnails, and AI outputs requested by you.
                   </p>
@@ -113,13 +113,13 @@ export default function Terms() {
                 </div>
               </section>
 
-              {/* 5. License to Kimu; Feedback */}
+              {/* 5. License to Vibecut; Feedback */}
               <section>
-                <h2 className="text-2xl font-bold mb-4 pl-2">5. License to Kimu; Feedback</h2>
+                <h2 className="text-2xl font-bold mb-4 pl-2">5. License to Vibecut; Feedback</h2>
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
                     We may reproduce and use de‑identified, aggregated metrics for analytics, performance, and
-                    reliability purposes. If you provide suggestions or feedback, you grant Kimu a perpetual,
+                    reliability purposes. If you provide suggestions or feedback, you grant Vibecut a perpetual,
                     irrevocable, royalty‑free license to use it without restriction.
                   </p>
                 </div>
@@ -237,7 +237,7 @@ export default function Terms() {
                 <h2 className="text-2xl font-bold mb-4 pl-2">12. Intellectual Property</h2>
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
-                    Kimu, including its UI, code, and design elements, is owned by us or our licensors and is protected
+                    Vibecut, including its UI, code, and design elements, is owned by us or our licensors and is protected
                     by intellectual property laws. Except for rights expressly granted, no rights are transferred to
                     you.
                   </p>
@@ -249,7 +249,7 @@ export default function Terms() {
                 <h2 className="text-2xl font-bold mb-4 pl-2">13. Third‑Party Services</h2>
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
-                    Kimu may integrate or link to third‑party services (e.g., storage, hosting, analytics, AI
+                    Vibecut may integrate or link to third‑party services (e.g., storage, hosting, analytics, AI
                     providers). Your use of those services is subject to their terms and privacy policies. We are not
                     responsible for third‑party services.
                   </p>
@@ -261,7 +261,7 @@ export default function Terms() {
                 <h2 className="text-2xl font-bold mb-4 pl-2">14. Disclaimers</h2>
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
-                    Kimu is provided on an “as is” and “as available” basis without warranties of any kind, express or
+                    Vibecut is provided on an “as is” and “as available” basis without warranties of any kind, express or
                     implied, including merchantability, fitness for a particular purpose, and non‑infringement. We do
                     not guarantee uninterrupted or error‑free operation, or that defects will be corrected.
                   </p>
@@ -273,7 +273,7 @@ export default function Terms() {
                 <h2 className="text-2xl font-bold mb-4 pl-2">15. Limitation of Liability</h2>
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
-                    To the maximum extent permitted by law, Kimu and its affiliates will not be liable for any indirect,
+                    To the maximum extent permitted by law, Vibecut and its affiliates will not be liable for any indirect,
                     incidental, special, consequential, exemplary, or punitive damages, or for lost profits, data, or
                     goodwill. Our total liability for any claim relating to the service will not exceed the amounts you
                     paid to us for the service in the 12 months before the claim (or $50 if you did not pay).
@@ -286,8 +286,8 @@ export default function Terms() {
                 <h2 className="text-2xl font-bold mb-4 pl-2">16. Indemnification</h2>
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
-                    You agree to indemnify and hold Kimu harmless from any claims, damages, liabilities, and expenses
-                    (including reasonable attorney fees) arising from your use of Kimu, your User Content, or your
+                    You agree to indemnify and hold Vibecut harmless from any claims, damages, liabilities, and expenses
+                    (including reasonable attorney fees) arising from your use of Vibecut, your User Content, or your
                     violation of these Terms or applicable law.
                   </p>
                 </div>
@@ -298,7 +298,7 @@ export default function Terms() {
                 <h2 className="text-2xl font-bold mb-4 pl-2">17. Governing Law & Dispute Resolution</h2>
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
-                    These Terms are governed by the laws applicable in the place where Kimu is organized and operates,
+                    These Terms are governed by the laws applicable in the place where Vibecut is organized and operates,
                     without regard to conflict‑of‑laws rules. Where required, mandatory consumer protection laws in your
                     country of residence remain unaffected. Courts in that jurisdiction will have exclusive
                     jurisdiction, unless applicable law provides otherwise.
@@ -312,7 +312,7 @@ export default function Terms() {
                 <div className="space-y-2 ml-8 text-sm text-muted-foreground">
                   <p>
                     We may update these Terms from time to time. When we do, we will post an updated version and
-                    effective date. Your continued use of Kimu after changes become effective constitutes acceptance.
+                    effective date. Your continued use of Vibecut after changes become effective constitutes acceptance.
                   </p>
                 </div>
               </section>
@@ -347,8 +347,8 @@ export default function Terms() {
               <span className="uppercase tracking-wider text-muted-foreground">Last updated</span>{" "}
               <span className="font-medium">{lastUpdated}</span>
             </div>
-            <a href="/" className="inline-flex items-center gap-2 hover:underline font-medium" title="Back to Kimu">
-              <KimuLogo className="w-4 h-4" /> Return to Kimu
+            <a href="/" className="inline-flex items-center gap-2 hover:underline font-medium" title="Back to Vibecut">
+              <VibecutLogo className="w-4 h-4" /> Return to Vibecut
             </a>
           </div>
         </div>

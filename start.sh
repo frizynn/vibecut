@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Kimu — lanzador único. Arranca todo y abre la app en una ventana.
+# Vibecut — lanzador único. Arranca todo y abre la app en una ventana.
 # Primera vez: instala dependencias solo. Cerrá la ventana o Ctrl-C para salir.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -36,7 +36,7 @@ if [ "$IS_LOCAL" -eq 1 ]; then
 else
   say "Iniciando base de datos..."
   $COMPOSE up -d >/dev/null
-  until docker exec videoeditor-postgres-dev pg_isready -U videoeditor >/dev/null 2>&1; do sleep 1; done
+  until docker exec vibecut-postgres-dev pg_isready -U vibecut >/dev/null 2>&1; do sleep 1; done
 fi
 
 if [ ! -d node_modules ]; then
@@ -50,7 +50,7 @@ fi
 
 pids=()
 cleanup() {
-  printf '\n'; say "Cerrando Kimu..."
+  printf '\n'; say "Cerrando Vibecut..."
   for pid in "${pids[@]}"; do kill "$pid" 2>/dev/null || true; done
   [ "$IS_LOCAL" -eq 1 ] || $COMPOSE stop >/dev/null 2>&1 || true
 }
@@ -58,9 +58,9 @@ trap cleanup EXIT INT TERM
 
 say "Arrancando la app..."
 # Backend primero: en modo local crea el esquema SQLite antes de que el renderer abra el archivo.
-( cd backend && uv run uvicorn main:app --port 3000 ) >/tmp/kimu-backend.log 2>&1 & pids+=($!)
-pnpm dlx tsx app/videorender/videorender.ts >/tmp/kimu-renderer.log 2>&1 & pids+=($!)
-pnpm dev >/tmp/kimu-frontend.log 2>&1 & pids+=($!)
+( cd backend && uv run uvicorn main:app --port 3000 ) >/tmp/vibecut-backend.log 2>&1 & pids+=($!)
+pnpm dlx tsx app/videorender/videorender.ts >/tmp/vibecut-renderer.log 2>&1 & pids+=($!)
+pnpm dev >/tmp/vibecut-frontend.log 2>&1 & pids+=($!)
 
 # Abrir la ventana de la app cuando el editor esté listo.
 open_app() {
@@ -78,6 +78,6 @@ open_app() {
 }
 open_app &
 
-printf '\n\033[32m  ✓ Kimu está abierto.\033[0m  Si la ventana no apareció, entrá a %s\n' "$APP_URL"
+printf '\n\033[32m  ✓ Vibecut está abierto.\033[0m  Si la ventana no apareció, entrá a %s\n' "$APP_URL"
 printf '    (Cerrá esta terminal o Ctrl-C para apagar todo.)\n\n'
 wait

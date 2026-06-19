@@ -1,7 +1,7 @@
 services:
   redis:
     image: redis:7-alpine
-    container_name: videoeditor-redis-dev
+    container_name: vibecut-redis-dev
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
@@ -16,12 +16,12 @@ services:
 
   postgres:
     image: postgres:18
-    container_name: videoeditor-postgres-dev
+    container_name: vibecut-postgres-dev
     restart: unless-stopped
     environment:
-      POSTGRES_DB: videoeditor
-      POSTGRES_USER: videoeditor
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-videoeditor}
+      POSTGRES_DB: vibecut
+      POSTGRES_USER: vibecut
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vibecut}
     ports:
       - "5432:5432"
     volumes:
@@ -30,7 +30,7 @@ services:
       # Auto-run migrations on first init only (postgres entrypoint convention).
       - ./migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U videoeditor -d videoeditor"]
+      test: ["CMD-SHELL", "pg_isready -U vibecut -d vibecut"]
       interval: 5s
       timeout: 3s
       retries: 5

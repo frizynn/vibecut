@@ -14,7 +14,7 @@ import {
   Trash2,
   Github,
 } from "lucide-react";
-import { KimuLogo } from "~/components/ui/KimuLogo";
+import { VibecutLogo } from "~/components/ui/VibecutLogo";
 import { GlowingEffect } from "~/components/ui/glowing-effect";
 
 export default function Privacy() {
@@ -52,12 +52,12 @@ export default function Privacy() {
           {/* Document Header */}
           <div className="text-center mb-10 pb-6 border-b border-border/20">
             <div className="flex items-center justify-center gap-3 mb-2">
-              <KimuLogo className="w-6 h-6 text-foreground" />
-              <span className="text-sm font-semibold tracking-tight">Kimu Privacy Policy</span>
+              <VibecutLogo className="w-6 h-6 text-foreground" />
+              <span className="text-sm font-semibold tracking-tight">Vibecut Privacy Policy</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">How we handle your data</h2>
             <div className="mt-4 mx-auto max-w-3xl rounded-lg border border-border/30 bg-muted/5 px-4 py-3 text-xs font-mono text-muted-foreground text-left">
-              Kimu ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we
+              Vibecut ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we
               collect, use, disclose, and safeguard your information when you use our video editing application and
               related services.
             </div>
@@ -72,7 +72,7 @@ export default function Privacy() {
                 <div className="space-y-2 ml-8">
                   <p className="text-sm text-muted-foreground">
                     This Privacy Policy applies to our online services and is valid for visitors and users of our
-                    website and web editor with regards to information that they share with and/or collect in Kimu. This
+                    website and web editor with regards to information that they share with and/or collect in Vibecut. This
                     policy does not apply to information collected offline or via channels other than this website and
                     app.
                   </p>
@@ -262,7 +262,7 @@ export default function Privacy() {
                 <h2 className="text-2xl font-bold mb-4 pl-2">7. Open-Source Transparency</h2>
                 <div className="space-y-4 ml-11">
                   <p className="text-muted-foreground">
-                    Kimu is open-source. Inspect how data flows, audit changes, or contribute. We practice transparent
+                    Vibecut is open-source. Inspect how data flows, audit changes, or contribute. We practice transparent
                     engineering:
                   </p>
                   <ul className="list-disc ml-6 text-muted-foreground space-y-1">
@@ -271,7 +271,7 @@ export default function Privacy() {
                     <li>Incident reports for privacy/security events</li>
                   </ul>
                   <a
-                    href="https://github.com/trykimu/videoeditor"
+                    href="https://github.com/frizynn/vibecut"
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-md border border-border/40 hover:bg-muted/10">
@@ -313,7 +313,7 @@ export default function Privacy() {
                   <p className="text-sm text-muted-foreground">
                     We may update this Privacy Policy from time to time. When we do, we will publish an updated version
                     and effective date at the top of this page, unless another type of notice is legally required. Your
-                    continued use of Kimu after any change in this Privacy Policy will constitute your acceptance of
+                    continued use of Vibecut after any change in this Privacy Policy will constitute your acceptance of
                     such change.
                   </p>
                 </div>
@@ -327,8 +327,8 @@ export default function Privacy() {
               <span className="uppercase tracking-wider text-muted-foreground">Last updated</span>{" "}
               <span className="font-medium">30th August 2025</span>
             </div>
-            <a href="/" className="inline-flex items-center gap-2 hover:underline font-medium" title="Back to Kimu">
-              <KimuLogo className="w-4 h-4" /> Return to Kimu
+            <a href="/" className="inline-flex items-center gap-2 hover:underline font-medium" title="Back to Vibecut">
+              <VibecutLogo className="w-4 h-4" /> Return to Vibecut
             </a>
           </div>
         </div>

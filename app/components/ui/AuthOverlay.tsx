@@ -14,10 +14,10 @@ export function AuthOverlay({ isLoading: _isLoading, isSigningIn, onSignIn }: Au
       <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/70 to-background/95 backdrop-blur-sm" />
       <div className="relative z-10 w-full max-w-lg">
         <div className="text-center p-6 rounded-xl border border-border/30 bg-background/50">
-          <div className="text-2xl font-semibold mb-2">Code with Kimu</div>
+          <div className="text-2xl font-semibold mb-2">Code with Vibecut</div>
           <p className="text-sm text-muted-foreground mb-2">Please log in to use the alpha editor.</p>
           <p className="text-xs text-muted-foreground mb-6">
-            Kimu is a minimal, AI‑assisted video editor focused on speed and clarity. We don’t post anything on your
+            Vibecut is a minimal, AI‑assisted video editor focused on speed and clarity. We don’t post anything on your
             behalf. Signing in only creates a private account for saving your projects and enabling secure access.
           </p>
           <Button onClick={onSignIn} disabled={!!isSigningIn} className="inline-flex items-center gap-2">
