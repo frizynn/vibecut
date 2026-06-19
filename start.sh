@@ -78,6 +78,23 @@ open_app() {
 }
 open_app &
 
+# Mostrar el estado del copiloto (Claude Code / Codex / Gemini) cuando el backend responda.
+copilot_status() {
+  for _ in $(seq 1 30); do
+    s=$(curl -fsS "http://localhost:3000/ai/status" 2>/dev/null) || { sleep 1; continue; }
+    label=$(printf '%s' "$s" | sed -n 's/.*"label":"\([^"]*\)".*/\1/p')
+    ready=$(printf '%s' "$s" | grep -o '"ready":true' || true)
+    if [ -n "$ready" ]; then
+      printf '  \033[32m🤖 Copiloto conectado: %s\033[0m\n' "$label"
+    else
+      hint=$(printf '%s' "$s" | sed -n 's/.*"hint":"\([^"]*\)".*/\1/p')
+      printf '  \033[33m🤖 Copiloto sin conectar.\033[0m %s\n' "$hint"
+    fi
+    return
+  done
+}
+
 printf '\n\033[32m  ✓ Vibecut está abierto.\033[0m  Si la ventana no apareció, entrá a %s\n' "$APP_URL"
+copilot_status
 printf '    (Cerrá esta terminal o Ctrl-C para apagar todo.)\n\n'
 wait

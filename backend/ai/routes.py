@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import shutil
 import time
 from collections import defaultdict, deque
 from typing import Any
@@ -40,7 +41,13 @@ gemini_client: genai.Client | None = (
 #   "gemini"      -> Google Gemini API (needs GEMINI_API_KEY)
 #   "claude_code" -> local `claude` CLI, uses the user's Claude subscription
 #   "codex"       -> local `codex` CLI, uses the user's ChatGPT subscription
-_AI_BACKEND = detect_backend(os.getenv("AI_BACKEND"), gemini_client is not None)
+def current_backend() -> str:
+    """Resolve the copilot engine live, so installing a CLI takes effect without
+    a restart (makes connecting Claude Code / Codex frictionless)."""
+    return detect_backend(os.getenv("AI_BACKEND"), gemini_client is not None)
+
+
+_AI_BACKEND = current_backend()
 logger.info("Vibe copilot backend resolved to: %s", _AI_BACKEND)
 
 _MAX_MESSAGE_LENGTH = 20_000
@@ -147,6 +154,45 @@ async def _enforce_rate_limit(user_id: str) -> None:
         await _enforce_rate_limit_pg(user_id)
 
 
+class AiStatus(BaseModel):
+    backend: str  # claude_code | codex | gemini
+    label: str  # human-friendly name
+    ready: bool  # is the copilot usable right now?
+    hint: str  # what to do if not ready
+
+
+@router.get("/ai/status", response_model=AiStatus)
+async def ai_status() -> AiStatus:
+    """Tell the UI which copilot engine is active and whether it's ready, so
+    connecting Claude Code / Codex is obvious. Re-checked live on each call."""
+    backend = current_backend()
+    if backend == "claude_code":
+        ready = shutil.which("claude") is not None
+        return AiStatus(
+            backend=backend,
+            label="Claude Code",
+            ready=ready,
+            hint="" if ready else "Instalá Claude Code y abrí sesión (claude).",
+        )
+    if backend == "codex":
+        ready = shutil.which("codex") is not None
+        return AiStatus(
+            backend=backend,
+            label="Codex",
+            ready=ready,
+            hint="" if ready else "Instalá Codex y hacé `codex login`.",
+        )
+    ready = gemini_client is not None
+    return AiStatus(
+        backend="gemini",
+        label="Gemini",
+        ready=ready,
+        hint=""
+        if ready
+        else "Instalá Claude Code o Codex (usa tu suscripción), o poné GEMINI_API_KEY en .env.",
+    )
+
+
 class Message(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -162,14 +208,15 @@ async def process_ai_message(
     request: Message,
     user: SessionUser = Depends(get_current_user),
 ) -> FunctionCallResponse:
-    if _AI_BACKEND == "gemini" and gemini_client is None:
+    backend = current_backend()
+    if backend == "gemini" and gemini_client is None:
         return FunctionCallResponse(
             function_call=None,
             assistant_message=(
-                "The AI copilot is off because no GEMINI_API_KEY is configured. "
-                "You can still edit manually, transcribe, and cut silences. "
-                "Add a free key from https://aistudio.google.com/apikey, or set "
-                "AI_BACKEND=claude_code / codex to use a local agent CLI instead."
+                "El copiloto está apagado: no hay Claude Code ni Codex instalados, "
+                "ni una GEMINI_API_KEY. Igual podés editar, transcribir y cortar "
+                "silencios. Para activarlo: instalá Claude Code (`claude`) o Codex "
+                "(`codex login`), o poné una clave gratis de Gemini en .env."
             ),
         )
 
@@ -259,12 +306,12 @@ Media bin: {mediabin_json}
 """
 
     try:
-        if _AI_BACKEND == "claude_code":
+        if backend == "claude_code":
             structured = await call_claude_code(
                 prompt, FunctionCallResponse.model_json_schema()
             )
             return FunctionCallResponse.model_validate(structured)
-        if _AI_BACKEND == "codex":
+        if backend == "codex":
             structured = await call_codex(
                 prompt, FunctionCallResponse.model_json_schema()
             )

@@ -123,6 +123,20 @@ export function ChatBox({
 }: ChatBoxProps) {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  // Copilot connection status (Claude Code / Codex / Gemini) for the header badge.
+  const [copilot, setCopilot] = useState<{ label: string; ready: boolean; hint: string } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch("/backend/ai/status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (alive && d) setCopilot({ label: d.label, ready: !!d.ready, hint: d.hint ?? "" });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
   const [showMentions, setShowMentions] = useState(false);
   const [showSendOptions, setShowSendOptions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -1119,6 +1133,18 @@ export function ChatBox({
           <div className="flex items-center gap-2">
             <Bot className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-sm font-medium tracking-tight">Ask Vibecut</span>
+            {copilot && (
+              <span
+                title={copilot.ready ? `Conectado: ${copilot.label}` : copilot.hint}
+                className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                  copilot.ready
+                    ? "text-green-600 border-green-600/30 bg-green-600/10"
+                    : "text-amber-600 border-amber-600/30 bg-amber-600/10"
+                }`}
+              >
+                {copilot.ready ? `● ${copilot.label}` : "● sin conectar"}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={createTab} title="New chat">
