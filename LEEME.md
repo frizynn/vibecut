@@ -27,10 +27,13 @@ segundos y abre la ventana de la app. Para cerrar: cerrá la terminal o Ctrl-C.
 
 ## Qué necesitás tener instalado (una vez)
 
-- [Docker](https://docs.docker.com/get-docker/) (para la base de datos, corre en segundo plano)
 - [Node.js](https://nodejs.org/) + [pnpm](https://pnpm.io/installation)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) (para el motor en Python)
 - **ffmpeg** (`sudo apt install ffmpeg` en Ubuntu) — para transcripción y silencios.
+
+> No necesitás Docker: en modo local la base de datos es un archivo (SQLite) y no
+> hay servicios externos. (Docker solo hace falta si lo desplegás en la nube con
+> `LOCAL_MODE=false`.)
 
 ## Qué puede hacer
 

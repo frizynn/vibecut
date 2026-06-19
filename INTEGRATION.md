@@ -71,11 +71,16 @@ Para cloud/multiusuario: `LOCAL_MODE=false` + configurar BetterAuth.
 - [x] Copiloto Claude Code / Codex devuelve la acción correcta sin API key (probado).
 - [x] Botones de UI + tools del copiloto + emoji (typecheck limpio en archivos nuevos).
 - [x] Lanzador `./start.sh` + `./install-app.sh` (abre como app en ventana propia).
-- [ ] Binario 100% autocontenido sin Docker (Postgres→SQLite, Redis→in-memory). Pendiente.
+- [x] **Corre sin Docker** en modo local: SQLite (aiosqlite/better-sqlite3) +
+      cola de render en proceso (sin Redis). Verificado: stack completo bootea y
+      sirve sin contenedores; CRUD de proyectos + delete OK; camino Postgres
+      (`LOCAL_MODE=false`) intacto. Schema en `migrations/sqlite/schema.sql`.
+- [ ] Instalable único (Tauri/Electron + release en GitHub Actions). Pendiente.
 
-## Pendiente: app totalmente autocontenida
+## Pendiente: instalable de un clic
 
-Hoy "app" = ventana propia (Chrome `--app`) + lanzador de un comando, con los
-servicios locales por detrás (Docker para la DB). Un instalable único sin Docker
-requiere migrar Postgres→SQLite y sacar Redis (cola de render en proceso), y
-empaquetar con Tauri/Electron. Es el siguiente milestone.
+Falta empaquetar backend (Python) + renderer (Node) + ffmpeg + frontend en un
+único instalable (`.AppImage`/`.deb`/`.exe`) y publicarlo como Release vía GitHub
+Actions. Ya no hay que migrar nada de infra (Docker fuera): es empaquetado y
+bundling de runtimes. Requiere runners de CI por plataforma para compilar y
+verificar el binario.
