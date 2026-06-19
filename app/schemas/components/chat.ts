@@ -15,6 +15,8 @@ export {
   SetPlaybackSpeedArgsSchema,
   SplitScrubberArgsSchema,
   CreateTrackArgsSchema,
+  TranscribeArgsSchema,
+  CutSilencesArgsSchema,
 } from "../llm";
 
 export const ChatMessageSchema = z.object({

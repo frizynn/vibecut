@@ -19,6 +19,9 @@ import {
   Waves,
   Maximize,
   Minimize,
+  Captions,
+  AudioLines,
+  Smile,
 } from "lucide-react";
 
 // Custom video controls
@@ -45,8 +48,16 @@ import { Switch } from "~/components/ui/switch";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "~/components/ui/resizable";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import axios from "axios";
 import { toast } from "sonner";
+import { generateUUID } from "~/utils/uuid";
+import { llmTranscribe, llmCutSilences } from "~/utils/llm-handler";
 
 // Hooks
 import { useTimeline } from "~/hooks/useTimeline";
@@ -78,6 +89,8 @@ interface Message {
   timestamp: Date;
   snapshot?: TimelineState | null;
 }
+
+const EMOJIS = ["😀", "😂", "😍", "🔥", "👍", "🎉", "💯", "😢", "😮", "🙏"] as const;
 
 export default function TimelineEditor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -210,6 +223,15 @@ export default function TimelineEditor() {
   const expandTimelineCallback = useCallback(() => {
     return expandTimeline(containerRef);
   }, [expandTimeline]);
+
+  // useTimeline.getTimelineState closes over the render-time `timeline`, so a value captured inside
+  // an async callback goes stale across re-renders. Keep a ref pointed at the freshest accessor and
+  // expose a stable wrapper so multi-step media-processing tools always read committed state.
+  const getTimelineStateRef = useRef(getTimelineState);
+  useEffect(() => {
+    getTimelineStateRef.current = getTimelineState;
+  }, [getTimelineState]);
+  const getLiveTimelineState = useCallback(() => getTimelineStateRef.current(), []);
 
   const {
     scrollLeft: timelineScrollLeft,
@@ -641,6 +663,114 @@ export default function TimelineEditor() {
       toast.success(`Split the selected scrubber at ruler position`);
     }
   }, [handleSplitScrubberAtRuler, rulerPositionPx, selectedScrubberIds, timelineData]);
+
+  // Resolve the single selected video/audio clip, or surface a toast and return null.
+  const getSelectedMediaClip = useCallback((): ScrubberState | null => {
+    if (selectedScrubberIds.length !== 1) {
+      toast.error("Selecciona un solo clip");
+      return null;
+    }
+    const clip = getAllScrubbers().find((s) => s.id === selectedScrubberIds[0]);
+    if (!clip || (clip.mediaType !== "video" && clip.mediaType !== "audio")) {
+      toast.error("Selecciona un clip de video o audio");
+      return null;
+    }
+    return clip;
+  }, [selectedScrubberIds, getAllScrubbers]);
+
+  const handleTranscribeClick = useCallback(async () => {
+    const clip = getSelectedMediaClip();
+    if (!clip) return;
+    try {
+      const count = await llmTranscribe(
+        clip,
+        { maxCaptionChars: 42, modelSize: "base" },
+        {
+          handleAddTrack,
+          handleDropOnTrack,
+          handleUpdateScrubber: handleUpdateScrubberWithLocking,
+          getTimelineState: getLiveTimelineState,
+          pixelsPerSecond: getPixelsPerSecond(),
+        },
+      );
+      toast.success(`Transcripción: ${count} subtítulos agregados`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al transcribir");
+    }
+  }, [
+    getSelectedMediaClip,
+    handleAddTrack,
+    handleDropOnTrack,
+    handleUpdateScrubberWithLocking,
+    getLiveTimelineState,
+    getPixelsPerSecond,
+  ]);
+
+  const handleCutSilencesClick = useCallback(async () => {
+    const clip = getSelectedMediaClip();
+    if (!clip) return;
+    try {
+      const removed = await llmCutSilences(
+        clip,
+        {},
+        {
+          handleSplitScrubberAtRuler,
+          handleDeleteScrubber,
+          handleUpdateScrubber: handleUpdateScrubberWithLocking,
+          getTimelineState: getLiveTimelineState,
+          pixelsPerSecond: getPixelsPerSecond(),
+        },
+      );
+      setSelectedScrubberIds([]); // Original clip was split into multiple pieces.
+      toast.success(`Silencios cortados: ${removed.toFixed(1)}s eliminados`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al cortar silencios");
+    }
+  }, [
+    getSelectedMediaClip,
+    handleSplitScrubberAtRuler,
+    handleDeleteScrubber,
+    handleUpdateScrubberWithLocking,
+    getLiveTimelineState,
+    getPixelsPerSecond,
+  ]);
+
+  const handleInsertEmoji = useCallback(
+    (emoji: string) => {
+      const firstTrack = timeline.tracks[0];
+      if (!firstTrack) {
+        toast.error("Agrega una pista primero");
+        return;
+      }
+      const item: MediaBinItem = {
+        id: generateUUID(),
+        name: emoji,
+        mediaType: "text",
+        media_width: 0,
+        media_height: 0,
+        text: {
+          textContent: emoji,
+          fontSize: 48,
+          fontFamily: "Arial",
+          color: "#ffffff",
+          textAlign: "center",
+          fontWeight: "normal",
+          template: null,
+        },
+        groupped_scrubbers: null,
+        mediaUrlLocal: null,
+        mediaUrlRemote: null,
+        durationInSeconds: 0,
+        uploadProgress: null,
+        isUploading: false,
+        left_transition_id: null,
+        right_transition_id: null,
+      };
+      handleDropOnTrack(item, firstTrack.id, rulerPositionPx);
+      toast.success(`Emoji ${emoji} agregado`);
+    },
+    [timeline.tracks, handleDropOnTrack, rulerPositionPx],
+  );
 
   // Handler for grouping selected scrubbers
   const handleGroupSelected = useCallback(() => {
@@ -1195,6 +1325,47 @@ export default function TimelineEditor() {
                         Split
                       </Button>
                       <Separator orientation="vertical" className="h-4 mx-1" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleTranscribeClick}
+                        className="h-6 px-2 text-xs"
+                        title="Transcribir el clip seleccionado y agregar subtítulos">
+                        <Captions className="h-3 w-3 mr-1" />
+                        Transcribir
+                      </Button>
+                      <Separator orientation="vertical" className="h-4 mx-1" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCutSilencesClick}
+                        className="h-6 px-2 text-xs"
+                        title="Detectar y eliminar silencios del clip seleccionado">
+                        <AudioLines className="h-3 w-3 mr-1" />
+                        Cortar silencios
+                      </Button>
+                      <Separator orientation="vertical" className="h-4 mx-1" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" title="Insertar emoji">
+                            <Smile className="h-3 w-3 mr-1" />
+                            Emoji
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="min-w-0">
+                          <div className="grid grid-cols-5 gap-1 p-1">
+                            {EMOJIS.map((emoji) => (
+                              <DropdownMenuItem
+                                key={emoji}
+                                onSelect={() => handleInsertEmoji(emoji)}
+                                className="justify-center text-lg p-1 cursor-pointer">
+                                {emoji}
+                              </DropdownMenuItem>
+                            ))}
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Separator orientation="vertical" className="h-4 mx-1" />
                       <Button variant="ghost" size="sm" onClick={handleLogTimelineData} className="h-6 px-2 text-xs">
                         <Settings className="h-3 w-3 mr-1" />
                         Debug
@@ -1274,6 +1445,7 @@ export default function TimelineEditor() {
                     pixelsPerSecond={getPixelsPerSecond()}
                     handleAddTrack={handleAddTrack}
                     restoreTimeline={setTimelineFromServer}
+                    getTimelineState={getLiveTimelineState}
                   />
                 </div>
               </ResizablePanel>

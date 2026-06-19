@@ -9,12 +9,22 @@ type AuthUser = {
   image?: string | null;
 };
 
+// Local single-user mode: no login. Matches the server's LOCAL_MODE.
+const LOCAL_MODE = import.meta.env.VITE_LOCAL_MODE !== "false";
+const LOCAL_USER: AuthUser = {
+  id: "local-user",
+  email: "local@kimu.app",
+  name: "Local",
+  image: null,
+};
+
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<AuthUser | null>(LOCAL_MODE ? LOCAL_USER : null);
+  const [isLoading, setIsLoading] = useState(!LOCAL_MODE);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
+    if (LOCAL_MODE) return;
     let isMounted = true;
     (async () => {
       try {

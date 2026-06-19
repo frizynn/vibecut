@@ -1,0 +1,11 @@
+# Standard local override used by ./start.sh. Pins Postgres to a stable image
+# and a non-default host port so it doesn't clash with any Postgres you already
+# run on 5432. Applied automatically — you don't need to think about it.
+# Usage: docker compose -f docker-compose.dev.yml -f docker-compose.local.yml up -d
+services:
+  postgres:
+    # Upstream pins postgres:18, whose new data layout is incompatible with the
+    # /var/lib/postgresql/data volume mount in docker-compose.dev.yml. Pin 16 here.
+    image: postgres:16
+    ports: !override
+      - "5434:5432"

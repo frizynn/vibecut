@@ -1,4 +1,5 @@
 import logging
+import os
 from urllib.parse import unquote
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -7,6 +8,18 @@ from auth.schema import SessionUser
 from db import get_db_pool
 
 logger = logging.getLogger(__name__)
+
+# Local single-user mode: no login, no Google OAuth. The app runs as one
+# implicit local user. This is the default for a personal, self-hosted install
+# (set LOCAL_MODE=false to require real BetterAuth sessions, e.g. in the cloud).
+LOCAL_MODE = (os.getenv("LOCAL_MODE") or "true").strip().lower() in ("1", "true", "yes")
+LOCAL_USER_ID = "local-user"
+_LOCAL_USER = SessionUser(
+    user_id=LOCAL_USER_ID,
+    email="local@kimu.app",
+    name="Local",
+    image=None,
+)
 
 # HTTPS production uses the __Secure- prefix; dev may use the plain name.
 _BETTER_AUTH_COOKIE_NAMES = (
@@ -33,6 +46,25 @@ def _extract_session_token_from_cookies(request: Request) -> str | None:
     return token or None
 
 
+async def ensure_local_user() -> None:
+    """Seed the implicit local user so project/asset foreign keys resolve."""
+    if not LOCAL_MODE:
+        return
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO "user" (id, name, email, "emailVerified")
+            VALUES ($1, $2, $3, TRUE)
+            ON CONFLICT (id) DO NOTHING
+            """,
+            LOCAL_USER_ID,
+            _LOCAL_USER.name,
+            _LOCAL_USER.email,
+        )
+    logger.info("LOCAL_MODE on — running as implicit local user (no login).")
+
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
@@ -40,9 +72,13 @@ async def get_current_user(
     request: Request,
 ) -> SessionUser:
     """
-    FastAPI dependency. Reads the BetterAuth session token from the HttpOnly
+    FastAPI dependency. In LOCAL_MODE returns the implicit local user without
+    any session. Otherwise reads the BetterAuth session token from the HttpOnly
     cookie and validates it against the session/user tables in Postgres.
     """
+    if LOCAL_MODE:
+        return _LOCAL_USER
+
     session_token = _extract_session_token_from_cookies(request)
     if not session_token:
         raise HTTPException(

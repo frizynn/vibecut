@@ -57,6 +57,8 @@ import {
   SetPlaybackSpeedArgsSchema,
   SplitScrubberArgsSchema,
   CreateTrackArgsSchema,
+  TranscribeArgsSchema,
+  CutSilencesArgsSchema,
   ChatTabsStorageSchema,
 } from "~/schemas/components/chat";
 
@@ -70,6 +72,8 @@ import {
   llmUpdateTextContent,
   llmUpdateTextStyle,
   llmMoveScrubbersByOffset,
+  llmTranscribe,
+  llmCutSilences,
 } from "~/utils/llm-handler";
 
 interface Message {
@@ -95,6 +99,9 @@ interface ChatBoxProps {
   pixelsPerSecond: number;
   handleAddTrack?: () => void;
   restoreTimeline?: (state: TimelineState) => void;
+  // Live timeline accessor (ref-backed) for multi-step media-processing tools that must read
+  // freshly-committed state between mutations rather than a stale render snapshot.
+  getTimelineState?: () => TimelineState;
 }
 
 export function ChatBox({
@@ -112,6 +119,7 @@ export function ChatBox({
   pixelsPerSecond,
   handleAddTrack,
   restoreTimeline,
+  getTimelineState,
 }: ChatBoxProps) {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -860,6 +868,55 @@ export function ChatBox({
 
           } else if (fn === "LLMSetResolution" || fn === "SetResolution") {
             aiResponseContent = `ℹ️ Resolution change is not yet supported via chat.`;
+          } else if (fn === "LLMTranscribe") {
+            if (!handleAddTrack || !getTimelineState) throw new Error("Transcribe handlers unavailable");
+            const parsed = TranscribeArgsSchema.safeParse(args);
+            if (!parsed.success) throw new Error("Invalid arguments for LLMTranscribe");
+            const a = parsed.data;
+            const sourceClip = timelineState.tracks.flatMap((t) => t.scrubbers).find((s) => s.id === a.scrubber_id);
+            if (!sourceClip) throw new Error(`Clip not found: ${a.scrubber_id}`);
+            const count = await llmTranscribe(
+              sourceClip,
+              {
+                language: a.language,
+                modelSize: a.model_size,
+                maxCaptionChars: a.max_caption_chars,
+                targetTrackNumber: a.target_track_number,
+              },
+              {
+                handleAddTrack,
+                handleDropOnTrack,
+                handleUpdateScrubber,
+                getTimelineState,
+                pixelsPerSecond,
+              },
+            );
+            aiResponseContent = `✅ Transcribed "${sourceClip.name}" — added ${count} caption(s).`;
+          } else if (fn === "LLMCutSilences") {
+            if (!handleSplitScrubberAtRuler || !handleDeleteScrubber || !getTimelineState || !handleUpdateScrubber)
+              throw new Error("Cut-silences handlers unavailable");
+            const parsed = CutSilencesArgsSchema.safeParse(args);
+            if (!parsed.success) throw new Error("Invalid arguments for LLMCutSilences");
+            const a = parsed.data;
+            const sourceClip = timelineState.tracks.flatMap((t) => t.scrubbers).find((s) => s.id === a.scrubber_id);
+            if (!sourceClip) throw new Error(`Clip not found: ${a.scrubber_id}`);
+            const removed = await llmCutSilences(
+              sourceClip,
+              {
+                noiseDb: a.noise_db,
+                minSilenceSeconds: a.min_silence_seconds,
+                paddingSeconds: a.padding_seconds,
+                minKeepSeconds: a.min_keep_seconds,
+              },
+              {
+                handleSplitScrubberAtRuler,
+                handleDeleteScrubber,
+                handleUpdateScrubber,
+                getTimelineState,
+                pixelsPerSecond,
+              },
+            );
+            aiResponseContent = `✅ Cut silences from "${sourceClip.name}" — removed ${removed.toFixed(1)}s.`;
           } else {
             aiResponseContent = `❌ Unknown function: ${fn}`;
           }

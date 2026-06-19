@@ -14,6 +14,8 @@ dependencies = [
     "google-genai>=1.22.0",
     "python-dotenv>=1.0.0",
     "python-multipart>=0.0.22",
+    # Local, CPU-friendly speech-to-text for the transcription / auto-caption feature.
+    "faster-whisper>=1.1.0",
 ]
 
 [dependency-groups]

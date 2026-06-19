@@ -1,5 +1,6 @@
 // because there is only a fixed set of tools the LLM can use in a video editor, we're going to be writing functions for those tools and then calling them from the LLM.
 
+import axios from "axios";
 import {
   type MediaBinItem,
   type ScrubberState,
@@ -638,4 +639,264 @@ export function llmCheckForCollisions(timeline: TimelineState): {
     hasCollisions: collisions.length > 0,
     collisions,
   };
+}
+
+// ============================
+// MEDIA PROCESSING (transcribe / cut silences)
+// ============================
+
+// Mirror of the backend response shapes (backend/media/routes.py) consumed here.
+export interface TranscribeCaption {
+  start: number;
+  end: number;
+  text: string;
+}
+
+export interface CutKeepSegment {
+  start: number;
+  end: number;
+}
+
+export interface TranscribeApplyDeps {
+  handleAddTrack: () => void;
+  handleDropOnTrack: (item: MediaBinItem, trackId: string, dropLeftPx: number) => string;
+  handleUpdateScrubber: (updatedScrubber: ScrubberState) => void;
+  // Must read the LIVE timeline (e.g. a ref-backed accessor), not a render snapshot —
+  // captions are added across React ticks and each step depends on the previous commit.
+  getTimelineState: () => TimelineState;
+  pixelsPerSecond: number;
+}
+
+export interface CutSilencesApplyDeps {
+  handleSplitScrubberAtRuler: (rulerPositionPx: number, scrubberId: string | null) => number;
+  handleDeleteScrubber: (scrubberId: string) => void;
+  handleUpdateScrubber: (updatedScrubber: ScrubberState) => void;
+  // Must read the LIVE timeline; the split loop re-reads state after every mutation commits.
+  getTimelineState: () => TimelineState;
+  pixelsPerSecond: number;
+}
+
+const PX_EPSILON = 0.5;
+
+// Yield to React so a queued setTimeline commits and re-renders before the next read.
+// rAF fires after commit/paint; the macrotask fallback covers headless/background tabs.
+function nextTick(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => resolve());
+    } else {
+      setTimeout(resolve, 0);
+    }
+  });
+}
+
+// Attach the clip's media to the request. Prefer a server-reachable remote URL;
+// otherwise (local-only clip, e.g. no cloud storage configured) upload the raw
+// bytes from the local blob so transcribe / cut-silences work without R2.
+async function appendMediaToForm(
+  formData: FormData,
+  source: ScrubberState,
+  action: string,
+): Promise<void> {
+  const remote = source.mediaUrlRemote;
+  if (remote && !remote.startsWith("blob:")) {
+    formData.append("media_url", remote);
+    return;
+  }
+  if (source.mediaUrlLocal) {
+    const blob = await fetch(source.mediaUrlLocal).then((r) => r.blob());
+    formData.append("file", blob, source.name || "clip");
+    return;
+  }
+  throw new Error(`Clip media is not available — cannot ${action}`);
+}
+
+function assertProcessable(source: ScrubberState): void {
+  if (source.mediaType !== "video" && source.mediaType !== "audio") {
+    throw new Error("Select a video or audio clip");
+  }
+}
+
+export async function llmTranscribe(
+  source: ScrubberState,
+  opts: { language?: string; modelSize?: string; maxCaptionChars?: number; targetTrackNumber?: number },
+  deps: TranscribeApplyDeps,
+): Promise<number> {
+  assertProcessable(source);
+
+  const formData = new FormData();
+  await appendMediaToForm(formData, source, "transcribe");
+  if (opts.language) formData.append("language", opts.language);
+  formData.append("model_size", opts.modelSize ?? "base");
+  formData.append("max_caption_chars", String(opts.maxCaptionChars ?? 42));
+
+  const { data } = await axios.post<{ captions: TranscribeCaption[] }>("/backend/media/transcribe", formData);
+  const captions = data.captions;
+  if (captions.length === 0) return 0;
+
+  // Resolve the target text track id.
+  let trackId: string;
+  if (opts.targetTrackNumber !== undefined) {
+    trackId = `track-${opts.targetTrackNumber}`;
+  } else {
+    deps.handleAddTrack();
+    await nextTick();
+    const tracks = deps.getTimelineState().tracks;
+    if (tracks.length === 0) throw new Error("Failed to create a text track for captions");
+    trackId = tracks[tracks.length - 1].id;
+  }
+
+  for (const caption of captions) {
+    const item: MediaBinItem = {
+      id: generateUUID(),
+      name: caption.text,
+      mediaType: "text",
+      media_width: 0,
+      media_height: 0,
+      text: {
+        textContent: caption.text,
+        fontSize: 48,
+        fontFamily: "Arial",
+        color: "#ffffff",
+        textAlign: "center",
+        fontWeight: "normal",
+        template: null,
+      },
+      groupped_scrubbers: null,
+      mediaUrlLocal: null,
+      mediaUrlRemote: null,
+      durationInSeconds: caption.end - caption.start,
+      uploadProgress: null,
+      isUploading: false,
+      left_transition_id: null,
+      right_transition_id: null,
+    };
+
+    const dropLeftPx = source.left + caption.start * deps.pixelsPerSecond;
+    const newId = deps.handleDropOnTrack(item, trackId, dropLeftPx);
+    if (!newId) throw new Error(`Failed to place caption on ${trackId}`);
+
+    // handleDropOnTrack gives text clips a fixed 80px width regardless of duration; resize to match.
+    await nextTick();
+    const placed = deps
+      .getTimelineState()
+      .tracks.flatMap((t) => t.scrubbers)
+      .find((s) => s.id === newId);
+    if (placed) {
+      deps.handleUpdateScrubber({
+        ...placed,
+        width: (caption.end - caption.start) * deps.pixelsPerSecond,
+        name: caption.text,
+      });
+      await nextTick();
+    }
+  }
+
+  return captions.length;
+}
+
+export async function llmCutSilences(
+  source: ScrubberState,
+  opts: { noiseDb?: number; minSilenceSeconds?: number; paddingSeconds?: number; minKeepSeconds?: number },
+  deps: CutSilencesApplyDeps,
+): Promise<number> {
+  assertProcessable(source);
+
+  const formData = new FormData();
+  await appendMediaToForm(formData, source, "cut silences");
+  if (opts.noiseDb !== undefined) formData.append("noise_db", String(opts.noiseDb));
+  if (opts.minSilenceSeconds !== undefined) formData.append("min_silence_seconds", String(opts.minSilenceSeconds));
+  if (opts.paddingSeconds !== undefined) formData.append("padding_seconds", String(opts.paddingSeconds));
+  if (opts.minKeepSeconds !== undefined) formData.append("min_keep_seconds", String(opts.minKeepSeconds));
+
+  const { data } = await axios.post<{ keep_segments: CutKeepSegment[]; removed_seconds: number }>(
+    "/backend/media/cut-silences",
+    formData,
+  );
+
+  const pps = deps.pixelsPerSecond;
+  const clipStartSec = source.left / pps;
+  const clipEndSec = (source.left + source.width) / pps;
+
+  // keep_segments are relative to the media start; shift to absolute timeline seconds and clamp.
+  const keepRanges = data.keep_segments
+    .map((seg) => ({
+      start: Math.max(clipStartSec, clipStartSec + seg.start),
+      end: Math.min(clipEndSec, clipStartSec + seg.end),
+    }))
+    .filter((r) => r.end > r.start);
+
+  // Interior split boundaries: every kept-segment edge strictly inside the clip, deduped + sorted.
+  const boundarySet = new Set<number>();
+  for (const range of keepRanges) {
+    for (const edge of [range.start, range.end]) {
+      if (edge > clipStartSec + 1e-6 && edge < clipEndSec - 1e-6) {
+        boundarySet.add(Number(edge.toFixed(6)));
+      }
+    }
+  }
+  const boundaries = Array.from(boundarySet).sort((a, b) => a - b);
+
+  // Split the source clip into one piece per interval. handleSplitScrubberAtRuler returns only
+  // 0/1 and not the new ids, so after each commit we re-read the live timeline and follow the
+  // right-hand piece (the one that begins at the boundary) into the next iteration.
+  let currentId = source.id;
+  for (const boundary of boundaries) {
+    const splitPx = boundary * pps;
+    const ok = deps.handleSplitScrubberAtRuler(splitPx, currentId);
+    if (ok <= 0) continue; // boundary not inside the current piece (e.g. clamped duplicate)
+    await nextTick();
+    const onTrack = deps
+      .getTimelineState()
+      .tracks.flatMap((t) => t.scrubbers)
+      .filter((s) => s.y === source.y);
+    const rightPiece = onTrack.find((s) => Math.abs(s.left - splitPx) < PX_EPSILON);
+    if (rightPiece) currentId = rightPiece.id;
+  }
+
+  // Delete every resulting piece whose midpoint is not inside any kept range (i.e. silence).
+  const pieces = deps
+    .getTimelineState()
+    .tracks.flatMap((t) => t.scrubbers)
+    .filter(
+      (s) =>
+        s.y === source.y &&
+        s.left >= clipStartSec * pps - PX_EPSILON &&
+        s.left + s.width <= clipEndSec * pps + PX_EPSILON,
+    );
+
+  for (const piece of pieces) {
+    const midSec = (piece.left + piece.width / 2) / pps;
+    const kept = keepRanges.some((r) => midSec >= r.start && midSec <= r.end);
+    if (!kept) {
+      deps.handleDeleteScrubber(piece.id);
+      await nextTick();
+    }
+  }
+
+  // Compact the surviving (kept) pieces leftward so the cut is contiguous:
+  // deleting the silent pieces alone leaves a hole where each silence was, so we
+  // re-read the live timeline and pull each kept piece to start where the
+  // previous one ends, anchored at the clip's original start position.
+  const keptPieces = deps
+    .getTimelineState()
+    .tracks.flatMap((t) => t.scrubbers)
+    .filter(
+      (s) =>
+        s.y === source.y &&
+        s.left >= clipStartSec * pps - PX_EPSILON &&
+        s.left + s.width <= clipEndSec * pps + PX_EPSILON,
+    )
+    .sort((a, b) => a.left - b.left);
+
+  let cursorPx = clipStartSec * pps;
+  for (const piece of keptPieces) {
+    if (Math.abs(piece.left - cursorPx) > PX_EPSILON) {
+      deps.handleUpdateScrubber({ ...piece, left: cursorPx });
+      await nextTick();
+    }
+    cursorPx += piece.width;
+  }
+
+  return data.removed_seconds;
 }

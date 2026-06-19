@@ -137,3 +137,19 @@ export const SplitScrubberArgsSchema = z.object({
 export const CreateTrackArgsSchema = z.object({
   count: z.coerce.number().int().min(1).optional().default(1),
 });
+
+export const TranscribeArgsSchema = z.object({
+  scrubber_id: z.string(),
+  language: optString,
+  model_size: z.string().optional().default("base"),
+  max_caption_chars: optNumberish,
+  target_track_number: optNumberish,
+});
+
+export const CutSilencesArgsSchema = z.object({
+  scrubber_id: z.string(),
+  noise_db: optNumberish,
+  min_silence_seconds: optNumberish,
+  padding_seconds: optNumberish,
+  min_keep_seconds: optNumberish,
+});

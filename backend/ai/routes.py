@@ -1,17 +1,23 @@
+import asyncio
 import json
 import logging
-import asyncio
+import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from google import genai
 from pydantic import BaseModel, ConfigDict, Field
 
+from ai.cli_backends import (
+    CliBackendError,
+    call_claude_code,
+    call_codex,
+    detect_backend,
+)
 from ai.schema import FunctionCallResponse
 from auth.routes import get_current_user
 from auth.schema import SessionUser
 from db import get_db_pool
-from utils import require_env
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +25,21 @@ router = APIRouter(tags=["ai"])
 
 _GEMINI_MODEL = "gemini-2.5-flash"
 
-GEMINI_API_KEY: str = require_env("GEMINI_API_KEY")
-gemini_client: genai.Client = genai.Client(api_key=GEMINI_API_KEY)
+# The Vibe AI copilot is optional. Without a key the editor (and the local
+# transcribe / silence-cut features) still work — only the chat assistant is off.
+GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY") or None
+gemini_client: genai.Client | None = (
+    genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+)
+
+# Which engine powers the Vibe copilot. Default "auto" picks a locally installed
+# agent CLI (Claude Code / Codex, no API key) before falling back to Gemini, so
+# a self-hosting user gets a working copilot with zero configuration.
+#   "gemini"      -> Google Gemini API (needs GEMINI_API_KEY)
+#   "claude_code" -> local `claude` CLI, uses the user's Claude subscription
+#   "codex"       -> local `codex` CLI, uses the user's ChatGPT subscription
+_AI_BACKEND = detect_backend(os.getenv("AI_BACKEND"), gemini_client is not None)
+logger.info("Vibe copilot backend resolved to: %s", _AI_BACKEND)
 
 _MAX_MESSAGE_LENGTH = 20_000
 _MAX_HISTORY_ITEMS = 50
@@ -114,6 +133,17 @@ async def process_ai_message(
     request: Message,
     user: SessionUser = Depends(get_current_user),
 ) -> FunctionCallResponse:
+    if _AI_BACKEND == "gemini" and gemini_client is None:
+        return FunctionCallResponse(
+            function_call=None,
+            assistant_message=(
+                "The AI copilot is off because no GEMINI_API_KEY is configured. "
+                "You can still edit manually, transcribe, and cut silences. "
+                "Add a free key from https://aistudio.google.com/apikey, or set "
+                "AI_BACKEND=claude_code / codex to use a local agent CLI instead."
+            ),
+        )
+
     await _enforce_rate_limit(user.user_id)
 
     # Bound the serialized payload before forwarding to Gemini to cap token spend.
@@ -185,6 +215,12 @@ You are Kimu, an AI video-editing assistant.
 - **LLMUpdateTextStyle** — change font/size/colour/alignment.
   Args: scrubber_id, fontSize (px), fontFamily, color (hex), textAlign (left/center/right), fontWeight (normal/bold)
 
+### Media processing
+- **LLMTranscribe** — transcribe a video/audio clip and place its captions as text clips on a text track.
+  Args: scrubber_id (exact id), language (ISO code or null to auto-detect), model_size=base, max_caption_chars=42, target_track_number (1-based, null = new track)
+- **LLMCutSilences** — detect silences in a video/audio clip and remove them via split/delete.
+  Args: scrubber_id (exact id), noise_db=-30.0, min_silence_seconds=0.5, padding_seconds=0.1, min_keep_seconds=0.2
+
 ## Context
 Conversation history (oldest first): {json.dumps(history, ensure_ascii=False)}
 User message: {json.dumps(request.message, ensure_ascii=False)}
@@ -194,6 +230,22 @@ Media bin: {mediabin_json}
 """
 
     try:
+        if _AI_BACKEND == "claude_code":
+            structured = await call_claude_code(
+                prompt, FunctionCallResponse.model_json_schema()
+            )
+            return FunctionCallResponse.model_validate(structured)
+        if _AI_BACKEND == "codex":
+            structured = await call_codex(
+                prompt, FunctionCallResponse.model_json_schema()
+            )
+            return FunctionCallResponse.model_validate(structured)
+
+        # Default backend: Gemini API.
+        if gemini_client is None:
+            raise HTTPException(
+                status_code=503, detail="Gemini backend not configured"
+            )
         response = gemini_client.models.generate_content(
             model=_GEMINI_MODEL,
             contents=prompt,
@@ -203,6 +255,11 @@ Media bin: {mediabin_json}
             },
         )
         return FunctionCallResponse.model_validate(response.parsed)
+    except CliBackendError as exc:
+        logger.warning("AI CLI backend error: %s", exc)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except HTTPException:
+        raise
     except ValueError as exc:
         # Don't include user content (timeline / messages) in logs — log the type only.
         logger.warning("AI response validation failed: %s", type(exc).__name__)

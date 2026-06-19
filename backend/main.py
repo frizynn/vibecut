@@ -13,8 +13,10 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 # because env should be loaded before importing the routes. is it a hack? idts.
 from ai.routes import router as ai_router  # noqa: E402
 from api.routes import router as api_router  # noqa: E402
+from auth.routes import ensure_local_user  # noqa: E402
 from auth.routes import router as auth_router  # noqa: E402
 from db import close_db_pool  # noqa: E402
+from media.routes import router as media_router  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,6 +28,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Starting up")
+    await ensure_local_user()
     yield
     logger.info("Shutting down — closing DB pool")
     await close_db_pool()
@@ -55,6 +58,7 @@ async def beep() -> dict:
 app.include_router(auth_router)
 app.include_router(ai_router)
 app.include_router(api_router)
+app.include_router(media_router)
 
 if __name__ == "__main__":
     import uvicorn

@@ -188,6 +188,28 @@ class LLMUpdateTextStyleArgs(BaseSchema):
     fontWeight: Literal["normal", "bold"] | None = Field(default=None, description="Font weight")
 
 
+class LLMTranscribeArgs(BaseSchema):
+    function_name: Literal["LLMTranscribe"] = Field(
+        description="Transcribe a video/audio clip and place its captions as text clips on a text track"
+    )
+    scrubber_id: str = Field(description="Exact id of the video/audio clip to transcribe")
+    language: str | None = Field(default=None, description="ISO 639-1 code (e.g. 'en','es'); None = auto-detect")
+    model_size: str = Field(default="base", description="Whisper model size: tiny, base, small, medium, large")
+    max_caption_chars: int = Field(default=42, ge=10, le=120, description="Max characters per caption clip")
+    target_track_number: int | None = Field(default=None, description="1-based track for captions; None = new track")
+
+
+class LLMCutSilencesArgs(BaseSchema):
+    function_name: Literal["LLMCutSilences"] = Field(
+        description="Detect silences in a video/audio clip and remove them by splitting and deleting silent spans"
+    )
+    scrubber_id: str = Field(description="Exact id of the video/audio clip to process")
+    noise_db: float = Field(default=-30.0, description="Silence threshold in dB (more negative = stricter)")
+    min_silence_seconds: float = Field(default=0.5, gt=0.0, description="Minimum silence duration to remove (s)")
+    padding_seconds: float = Field(default=0.1, ge=0.0, description="Padding kept around speech edges (s)")
+    min_keep_seconds: float = Field(default=0.2, ge=0.0, description="Minimum kept-segment duration (s)")
+
+
 class FunctionCallResponse(BaseSchema):
     function_call: (
         LLMAddScrubberToTimelineArgs
@@ -203,6 +225,8 @@ class FunctionCallResponse(BaseSchema):
         | LLMMoveScrubbersByOffsetArgs
         | LLMUpdateTextContentArgs
         | LLMUpdateTextStyleArgs
+        | LLMTranscribeArgs
+        | LLMCutSilencesArgs
         | None
     ) = None
     assistant_message: str | None = None
