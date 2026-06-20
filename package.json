@@ -1,9 +1,13 @@
 {
   "name": "vibecut",
+  "version": "1.0.0",
+  "description": "Local AI video editor",
+  "author": "Vibecut",
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE.md",
+  "main": "dist/electron/main/index.js",
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev --host 0.0.0.0",
@@ -13,7 +17,9 @@
     "lint:fix": "eslint \"**/*.{ts,tsx,js,mjs,cjs}\" --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check"
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check",
+    "electron:build": "bash scripts/build-electron-main.sh",
+    "dist:mac": "bash scripts/build-macos.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3",
@@ -32,6 +38,7 @@
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@react-router/express": "^7.14.2",
     "@react-router/node": "^7.14.2",
     "@react-router/serve": "^7.14.2",
     "@remotion/bundler": "4.0.329",
@@ -53,6 +60,7 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "framer-motion": "^12.23.12",
+    "http-proxy-middleware": "^3.0.0",
     "ioredis": "^5.10.1",
     "isbot": "^5.1.29",
     "lucide-react": "^0.534.0",
@@ -107,6 +115,8 @@
     "@types/react-dom": "^19.1.7",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.32.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",

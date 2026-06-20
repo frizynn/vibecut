@@ -1,0 +1,77 @@
+appId: com.vibecut.app
+productName: Vibecut
+directories:
+  output: dist-electron
+  buildResources: electron-assets
+
+mac:
+  category: public.app-category.video
+  icon: electron-assets/icon.png
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+
+dmg:
+  title: Vibecut
+  window:
+    width: 540
+    height: 380
+
+files:
+  - dist/electron/**/*
+  - package.json
+
+extraResources:
+  # React Router SSR server bundle + static client assets
+  - from: build/server
+    to: build/server
+    filter:
+      - "**/*"
+  - from: build/client
+    to: build/client
+    filter:
+      - "**/*"
+  # Compiled renderer process
+  - from: dist/videorender.bundle.mjs
+    to: dist/videorender.bundle.mjs
+  # Python FastAPI backend source (Python binary is in resources/python)
+  - from: backend
+    to: backend
+    filter:
+      - "**/*"
+      - "!.venv"
+      - "!__pycache__"
+      - "!**/__pycache__"
+      - "!data"
+      - "!*.pyc"
+  # Standalone Python interpreter + stdlib
+  - from: resources/python
+    to: python
+    filter:
+      - "**/*"
+  # Backend Python packages (installed with pip --target)
+  - from: resources/python-site-packages
+    to: python-site-packages
+    filter:
+      - "**/*"
+  # FFmpeg binaries
+  - from: resources/ffmpeg
+    to: ffmpeg
+  - from: resources/ffprobe
+    to: ffprobe
+  # Flat node_modules for the renderer process (better-sqlite3, @remotion/*, etc.)
+  # Built with pnpm install --shamefully-hoist --prod in build-macos.sh
+  - from: runtime-node-modules/node_modules
+    to: node_modules
+    filter:
+      - "**/*"
+      - "!**/.cache"
+
+asar: true
+asarUnpack:
+  - "**/*.node"
+
+# electron-builder rebuilds native modules against Electron's ABI
+npmRebuild: false  # We handle this manually in build-macos.sh

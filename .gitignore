@@ -32,6 +32,12 @@ project_data/
 *.egg-info/
 *.egg
 
+# Electron build outputs and generated assets
+/dist-electron/
+/electron-assets/
+/resources/
+/runtime-node-modules/
+
 # IDE specific
 .idea/
 .vscode/

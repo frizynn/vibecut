@@ -4,6 +4,12 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Ensure public registries are used and Homebrew pnpm is on PATH (macOS)
+export npm_config_registry=https://registry.npmjs.org/
+export COREPACK_ENABLE_STRICT=0
+export UV_INDEX_URL=https://pypi.org/simple/
+export PATH="/opt/homebrew/bin:$PATH"
+
 APP_URL="http://localhost:5173"
 COMPOSE="docker compose -f docker-compose.dev.yml -f docker-compose.local.yml"
 
