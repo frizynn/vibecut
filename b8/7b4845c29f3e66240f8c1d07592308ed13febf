@@ -1,0 +1,67 @@
+electron/preload.ts
+  s_b5d964527580c0::t_ed42c4f3cce4d2 1
+scripts/download-ffmpeg.sh
+  s_b5d964527580c0::t_19fb8086cb5ae1 1-25
+electron-builder.yml
+  s_b5d964527580c0::t_74fa3f5fdfdddd 1-8,10-23,25-26,32-35,40-47,50-53,55-58,60-63,71-75
+  s_b5d964527580c0::t_8ea316120edd61 37-38
+  s_b5d964527580c0::t_1170797c61f691 67-70
+  s_b5d964527580c0::t_d33b591c24154b 9
+  s_b5d964527580c0::t_be5921b6b3c4f6 27-31,36,39,48-49,54,59,64-66,76-77
+  s_b5d964527580c0::t_ce0365886cba7d 24
+scripts/build-renderer.sh
+  s_b5d964527580c0::t_8e64a3b129ed7d 19,25,27
+  s_b5d964527580c0::t_d46760611e0132 1-4,9-13,15-18,21-24,26
+  s_b5d964527580c0::t_86fb89c5db1f80 14
+  s_b5d964527580c0::t_cc47ac48e6fa1e 5-8
+  s_b5d964527580c0::t_a1012d38a1c279 20
+scripts/build-electron-main.sh
+  s_b5d964527580c0::t_ce7ac14efbfd6c 2,36
+  s_b5d964527580c0::t_78fb17dd51524a 1,5-9,11-16,18-26,28-35
+  s_b5d964527580c0::t_3ea8bbf2655c7b 3-4,10
+  s_b5d964527580c0::t_c49cda405734fe 17,27
+.gitignore
+  s_b5d964527580c0::t_6c02c35a7cecb5 35-40
+start.sh
+  s_b5d964527580c0::t_bab26818732afa 8-12
+  s_b5d964527580c0::t_5b0ee80c5edcc1 7
+package.json
+  s_b5d964527580c0::t_2a9b343d7beb84 21
+  s_b5d964527580c0::t_438d062272fbc4 3-5
+  s_b5d964527580c0::t_f7e104f015b408 41
+  s_b5d964527580c0::t_9df5b569ff9755 10,20,22
+.npmrc
+  s_b5d964527580c0::t_9d69947d1d90b3 1
+scripts/build-python-bundle.sh
+  s_b5d964527580c0::t_ae8bc3753e3b28 1,4-6,9-10,13-15,18-44
+  s_b5d964527580c0::t_aa9e006e2ca991 16-17
+  s_b5d964527580c0::t_5d9cb9af19a712 2-3,7-8,11-12
+scripts/build-macos.sh
+  s_b5d964527580c0::t_ca4927cbe9fe4f 1-4,6-14,17,20,23,25-26,28-29,31-32,56,59-60
+  s_b5d964527580c0::t_e7941d44ab8dd2 5,16,19,22,24,35,41,43,58
+  s_b5d964527580c0::t_148376903f7714 55
+  s_b5d964527580c0::t_9abac75dbcd526 15,18,21,27,30,33-34,36-40,42,49
+  s_b5d964527580c0::t_212910e41fdac3 50-54
+  s_b5d964527580c0::t_cb38f8812c822b 44-48
+  s_b5d964527580c0::t_a79fd572800375 57
+electron/main.ts
+  s_b5d964527580c0::t_44ee4bc7bdfd00 1-5,9-17,24,29-31,33-65,67-82,85,91-101,103,106-142,147-166,168-213
+  s_b5d964527580c0::t_73225a73fb6405 25
+  s_b5d964527580c0::t_6a5abbc101f5a2 6-8,18-23,26-28,32,66,83-84,86-90,102,104-105,143-146,167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "b87b4845c29f3e66240f8c1d07592308ed13febf",
+  "prompts": {},
+  "sessions": {
+    "s_b5d964527580c0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "73a30d31-0155-4b1a-afa5-93cfbdddbe8a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Juan Francisco Lebrero <djfran774@gmail.com>"
+    }
+  }
+}
